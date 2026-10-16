@@ -1,22 +1,16 @@
 /*
- * Every palette entry of the Vercel piece, in the generator's six-format:
- * paper run, glint's pale lift, full-glint brightness, each again for a
- * dark page. The mono-to-white ladder is the glint working the black ink.
+ * Every palette entry of the Vercel piece, in the generator's layout:
+ * indices 0-2 serve a light page (black ink, the glint's lifted grey, the
+ * near-white peak), 3-5 the same ladder again for a dark page.
  */
 
 export const labels: string[] = [
-  // dark page: black ink, lifted, glint peak; then bright pass's run
-  "ink · black",
-  "ink · lifted grey",
-  "ink · glint peak",
-  "ink · pale grey",
-  "ink · pale lift",
-  "ink · near white",
-  // light page: the same three again
-  "ink · black",
-  "ink · lifted grey",
-  "ink · glint peak",
-  "ink · pale grey",
-  "ink · pale lift",
-  "ink · near white",
+  // light page (0-2)
+  "light · black",
+  "light · lifted grey",
+  "light · glint peak",
+  // dark page (3-5)
+  "dark · pale grey",
+  "dark · pale lift",
+  "dark · near white",
 ];
