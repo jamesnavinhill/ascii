@@ -120,14 +120,6 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
 
         <!-- Panel Tab: Palette & Halftone -->
         <div class="panel-body" id="tab-palette">
-          <div class="param-control-group param-row-between" id="ground-row">
-            <label for="col-ground" class="param-label">ground color</label>
-            <div class="param-color-right">
-              <input type="color" id="col-ground" value="#0b0817" />
-              <span class="param-val" id="hex-ground">#0b0817</span>
-            </div>
-          </div>
-
           <div id="halftone-rows">
 
           <div class="param-control-group">
@@ -174,9 +166,8 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
               <!-- Swatches rendered here -->
             </div>
             <p class="palette-note" id="palette-note" hidden>this piece is drawn in one ink</p>
-            <div class="section-title">colors on this item</div>
             <div class="palette-mapping" id="palette-mapping">
-              <!-- One labeled swatch per named color, from the item itself -->
+              <!-- One labeled swatch per color option, on the item itself -->
             </div>
           </div>
         </div>
@@ -1017,16 +1008,17 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
 
   /* One labeled swatch per named color on the active item, e.g. "boat  [sw]" */
   .palette-mapping {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 16px;
-    padding: 0.5rem 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 1rem;
+    padding: 0.5rem 0 0;
   }
 
-  .palette-map-row {
+  .palette-map-cell {
     display: flex;
     align-items: center;
     gap: 6px;
+    min-height: 22px;
   }
 
   .palette-map-label {
@@ -1112,6 +1104,7 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
 
 <script>
   import { draw, isSvg, LIMIT, raster, render, type Drawing, type Glyph, type Source, type Style } from "../lib/logo";
+import { labelsFor } from "../lib/swatch-map";
 import { clean, piece, source as generateSource, type Settings as LogoSettings } from "../lib/logo-file";
 import { load } from "ascii.rest";
   import type { Env, Frame, Meta, Options, Piece } from "ascii.rest";
@@ -1169,9 +1162,13 @@ import { load } from "ascii.rest";
   const paletteGridEl = document.getElementById("palette-grid") as HTMLElement;
   const paletteCountEl = document.getElementById("palette-count") as HTMLElement;
   const paletteNote = document.getElementById("palette-note") as HTMLElement;
-  const colGroundInput = document.getElementById("col-ground") as HTMLInputElement;
-  const hexGroundLabel = document.getElementById("hex-ground") as HTMLSpanElement;
-  const groundRow = document.getElementById("ground-row") as HTMLElement;
+  // Ground keeps its old <input type="color"> as the value the grid writes
+  // through; the row itself is gone from the panel.
+  const colGroundInput = document.createElement("input");
+  colGroundInput.type = "color";
+  const hexGroundLabel = document.createElement("span");
+  const groundRow = document.createElement("div");
+  groundRow.hidden = true;
   const halftoneRows = document.getElementById("halftone-rows") as HTMLElement;
   const selRamp = document.getElementById("sel-ramp") as HTMLSelectElement;
   const selDither = document.getElementById("sel-dither") as HTMLSelectElement;
@@ -1328,28 +1325,43 @@ import { load } from "ascii.rest";
     // measures each character's ink and snaps it to the chosen ramp. Darker in,
     // lighter out: "we're not shading anything new, just re-skinning it".
 
-    const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => v / 16 - 0.5);
-    const BAYER8 = [
-      0, 32, 8, 24, 40, 8, 56, 16, 48, 12, 20, 28, 44, 4, 36, 52, 24, 60,
-      16, 56, 30, 6, 34, 62, 14, 46, 22, 54, 1, 33, 9, 25, 41, 9, 57, 17,
-      49, 13, 21, 29, 45, 5, 37, 53, 25, 61, 17, 57, 31, 7, 35, 63, 15, 47,
-      23, 55, 2, 34, 10, 26, 42, 10, 58, 18, 50, 14, 22, 30, 46, 6, 38, 54,
-    ].map((v) => v / 64 - 0.5);
+    // Bayer dither matrices, built by the recursive rule so 8 and 4 really
+    // differ (a hand-typed table drifts); centered on zero, ready to add.
+    const bayer = (n: number): number[][] => {
+      if (n === 1) return [[0]];
+      const prev = bayer(n / 2);
+      const out: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
+      const scale = (n * n) as number;
+      const q: [number, number][] = [[0, 0], [n / 2, n / 2], [n / 2, 0], [0, n / 2]];
+      q.forEach(([ox, oy], k) => {
+        prev.forEach((row, y) => row.forEach((v, x) => { out[oy + y][ox + x] = v * 4 + k; }));
+      });
+      return out.map((row) => row.map((v) => (v + 0.5) / scale - 0.5));
+    };
+    const BAYER4 = bayer(4);
+    const BAYER8 = bayer(8);
+    const bayerCache = new Map<string, number[][]>([
+      ["bayer4", BAYER4],
+      ["bayer8", BAYER8],
+    ]);
 
-    // A rough per-character ink density, measured once at first use and cached.
+    // A rough per-character ink density, measured once at first use and cached
+    // on its own offscreen canvas: never the shared glyph atlas.
     const densityCache = new Map<string, number>();
+    const measure = document.createElement("canvas");
+    measure.width = 16;
+    measure.height = 16;
+    const mctx = measure.getContext("2d", { willReadFrequently: true }) as CanvasRenderingContext2D;
     function charDensity(c: string): number | null {
       if (c === " ") return 0;
       if (densityCache.has(c)) return densityCache.get(c)!;
-      const at = atlas.getContext("2d") as CanvasRenderingContext2D | null;
-      if (!at) return null;
-      at.font = `${16}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
-      at.textAlign = "center";
-      at.textBaseline = "middle";
-      at.fillStyle = "#fff";
-      at.clearRect(0, 0, 16, 16);
-      at.fillText(c, 8, 8);
-      const d = at.getImageData(0, 0, 16, 16).data;
+      mctx.clearRect(0, 0, 16, 16);
+      mctx.font = "16px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+      mctx.textAlign = "center";
+      mctx.textBaseline = "middle";
+      mctx.fillStyle = "#fff";
+      mctx.fillText(c, 8, 8);
+      const d = mctx.getImageData(0, 0, 16, 16).data;
       let sum = 0, n = 0;
       for (let i = 3; i < d.length; i += 4) { sum += d[i]; n++; }
       const v = sum / (n * 255);
@@ -1394,13 +1406,17 @@ import { load } from "ascii.rest";
       const ink = inkFor(ground);
 
       // Halftone remap: when a ramp is picked (or contrast shifted), retarget
-      // each glyph's ink to the ramp by density before drawing.
+      // each glyph's ink to the ramp by density before drawing. Ordered
+      // dithering proper: the bayer tile is the threshold between the ramp's
+      // own levels, so 4 and 8 read as different textures, not the same one.
       const ramp = selRamp.value;
       const contrast = parseFloat(rangeContrast.value);
       if (ramp || contrast !== 1) {
         const target = ramp || " ·•●";
-        const B = selDither.value === "bayer8" ? BAYER8 : BAYER4;
-        const bSize = selDither.value === "bayer8" ? 8 : 4;
+        const levels = target.length - 1;
+        const ditherMode = selDither.value;
+        const bSize = ditherMode === "bayer8" ? 8 : 4;
+        const B = bayerCache.get(ditherMode) ?? bayer(bSize);
         const remap: string[] = [];
         for (let i = 0; i < text.length; i++) {
           const c = text[i];
@@ -1408,10 +1424,12 @@ import { load } from "ascii.rest";
           const d = charDensity(c);
           if (d === null) { remap.push(c); continue; }
           const x = i % cols, y = (i / cols) | 0;
-          const dither = selDither.value === "none" ? 0 : B[(y % bSize) * bSize + (x % bSize)] - 0.5;
-          let t = d * contrast + dither;
-          t = t < 0 ? 0 : t > 1 ? 1 : t;
-          const idx = Math.min(target.length - 1, Math.round(t * (target.length - 1)));
+          // contrast around the mid ink, then the tile tips each cell up or down
+          let v = (d - 0.5) * contrast + 0.5;
+          v = v < 0 ? 0 : v > 1 ? 1 : v;
+          const scaled = v * levels;
+          let idx = Math.floor(scaled);
+          if (ditherMode !== "none" && idx < levels && scaled - idx > B[y % bSize][x % bSize] + 0.5) idx++;
           remap.push(target[idx]);
         }
         text = remap.join("");
@@ -2023,14 +2041,13 @@ import { load } from "ascii.rest";
   // scene engine. A swatch click recolors that palette entry.
 
   function updatePaletteUI() {
-    const ground = currentGround();
     const palette = activePalette();
 
-    groundRow.hidden = ground === null;
-    if (ground) {
-      colGroundInput.value = groundOverride ?? ground;
-      hexGroundLabel.textContent = colGroundInput.value;
-    }
+    // Ground lives in the per-item color grid now; keep the value in sync
+    // for the input that still feeds it.
+    colGroundInput.hidden = true;
+    const g = currentGround();
+    if (g) colGroundInput.value = groundOverride ?? g;
 
     // The halftone rows belong to every item now: the renderer remaps the
     // glyphs of whatever is on screen when a ramp is picked.
@@ -2054,10 +2071,10 @@ import { load } from "ascii.rest";
     renderPaletteMap();
   }
 
-  // --- colors on the item: one labeled swatch per named color ------------------
-  // Names come from the item itself: a scene's layers and their color params,
-  // a piece's color options, and the ground. A click opens the picker and the
-  // change lands on the same control the options tab would.
+  // --- the per-item color grid -------------------------------------------------
+  // One labeled swatch per palette entry, each named by the scene itself and
+  // each re-inked on its own — no slices, no flattening. Names come per scene
+  // from lib/swatches/<slug>.ts, index-aligned with the palette.
 
   interface MapEntry {
     label: string;
@@ -2068,6 +2085,7 @@ import { load } from "ascii.rest";
   function colorEntries(): MapEntry[] {
     if (!active) return [];
     const out: MapEntry[] = [];
+    const palette = activePalette();
     if (currentGround()) {
       out.push({
         label: "ground",
@@ -2078,75 +2096,31 @@ import { load } from "ascii.rest";
         },
       });
     }
-    if (active.kind === "piece") {
-      const schema = active.mod.meta.params ?? {};
-      Object.entries({ ...active.mod.meta.options, ...active.options }).forEach(([key, def]) => {
-        const pd = schema[key];
-        if (pd && pd.type === "color" && typeof def === "string") {
+    if (active.kind === "piece" && palette) {
+      const labels = labelsFor(active.slug);
+      if (labels) {
+        for (let i = 0; i < palette.length; i++) {
+          const index = i;
           out.push({
-            label: pd.label || key,
-            value: () => String(active.options[key] ?? def),
-            set: (hex) => applyPieceColor(key, hex),
-          });
-        }
-      });
-    } else if (active.kind === "scene") {
-      active.session.spec.layers.forEach((layer) => {
-        if (!layer.enabled) return;
-        const def = getLayerDefinition(layer.type);
-        if (!def) return;
-        const colors = Object.entries(def.schema).filter(([, pd]) => pd.type === "color");
-        colors.forEach(([key, pd]) => {
-          if (!("label" in pd)) return;
-          const schemaLabel = (pd as { label?: string; default?: unknown }).label ?? key;
-          out.push({
-            label: colors.length === 1 ? layer.name : `${layer.name} ${schemaLabel}`,
-            value: () => String(layer.params[key] ?? (pd as { default?: unknown }).default ?? ""),
+            label: labels[i] ?? `color ${i}`,
+            value: () => (active.kind === "piece" && active.colorOverride[index]) || activePalette()![index],
             set: (hex) => {
-              if (active.kind === "scene") {
-                active.session.setParam(layer.id, key, hex);
-                renderOnDemand();
-                updateCodeView();
-                renderSelectedLayerControls();
-              }
+              void setSwatch(index, hex);
             },
           });
-        });
-      });
+        }
+      }
     }
     return out;
-  }
-
-  function applyPieceColor(key: string, hex: string) {
-    if (active?.kind !== "piece") return;
-    active.options[key] = hex;
-    try {
-      active.frame = active.mod.default({ ...active.mod.meta.options, ...active.options });
-    } catch (err) {
-      codeOutput.textContent = `// ${active.mod.meta.name}: ${(err as Error).message}`;
-    }
-    buildOptionsControls();
-    renderOnDemand();
-    updateCodeView();
   }
 
   function renderPaletteMap() {
     paletteMappingEl.innerHTML = "";
     const entries = colorEntries();
-    if (!entries.length) {
-      const none = document.createElement("p");
-      none.className = "palette-note";
-      none.textContent = "this item has no named colors";
-      paletteMappingEl.appendChild(none);
-      return;
-    }
+    if (!entries.length) return;
     entries.forEach((entry) => {
-      const row = document.createElement("div");
-      row.className = "palette-map-row";
-
-      const labelSpan = document.createElement("span");
-      labelSpan.className = "palette-map-label";
-      labelSpan.textContent = entry.label;
+      const cell = document.createElement("div");
+      cell.className = "palette-map-cell";
 
       const sw = document.createElement("div");
       sw.className = "color-swatch clickable";
@@ -2156,15 +2130,18 @@ import { load } from "ascii.rest";
         swatchPicker.value = rgbToHex(entry.value());
         swatchPicker.oninput = () => {
           entry.set(swatchPicker.value);
-          sw.style.backgroundColor = swatchPicker.value;
           updatePaletteUI();
         };
         swatchPicker.click();
       });
 
-      row.appendChild(labelSpan);
-      row.appendChild(sw);
-      paletteMappingEl.appendChild(row);
+      const labelSpan = document.createElement("span");
+      labelSpan.className = "palette-map-label";
+      labelSpan.textContent = entry.label;
+
+      cell.appendChild(sw);
+      cell.appendChild(labelSpan);
+      paletteMappingEl.appendChild(cell);
     });
   }
 
@@ -2516,6 +2493,8 @@ import { load } from "ascii.rest";
     } else if (active?.kind === "piece") {
       groundOverride = colGroundInput.value;
       hexGroundLabel.textContent = colGroundInput.value;
+      // The surround takes the ground too, so the letterbox never reads as a bar.
+      canvasBox.style.background = groundOverride;
       renderOnDemand();
     }
   });
