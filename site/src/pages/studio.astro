@@ -82,6 +82,7 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
         <nav class="panel-tabs" id="panel-tabs">
           <button class="panel-tab-btn active" type="button" data-tab="tab-layers">layers</button>
           <button class="panel-tab-btn" type="button" data-tab="tab-palette">palette</button>
+          <button class="panel-tab-btn" type="button" data-tab="tab-glyph">glyph</button>
           <button class="panel-tab-btn" type="button" data-tab="tab-image">image</button>
         </nav>
 
@@ -104,8 +105,20 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
 
         <!-- Panel Tab: Palette & Halftone -->
         <div class="panel-body" id="tab-palette">
-          <div id="halftone-rows">
+          <div class="palette-swatches-section">
+            <div class="section-title">palette (<span id="palette-count">0</span>)</div>
+            <div class="palette-swatches" id="palette-grid">
+              <!-- Swatches rendered here -->
+            </div>
+            <p class="palette-note" id="palette-note" hidden>this piece is drawn in one ink</p>
+            <div class="palette-mapping" id="palette-mapping">
+              <!-- One labeled swatch per color option, on the item itself -->
+            </div>
+          </div>
+        </div>
 
+        <!-- Panel Tab: Glyphs - the character system the halftone draws with -->
+        <div class="panel-body" id="tab-glyph">
           <div class="param-control-group">
             <div class="param-control-header">
               <label for="sel-ramp" class="param-label">glyph ramp</label>
@@ -140,18 +153,6 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
             </div>
             <div class="param-widget">
               <input type="range" id="range-contrast" min="0.5" max="2.0" step="0.05" value="1.0" />
-            </div>
-          </div>
-          </div>
-
-          <div class="palette-swatches-section">
-            <div class="section-title">palette (<span id="palette-count">0</span>)</div>
-            <div class="palette-swatches" id="palette-grid">
-              <!-- Swatches rendered here -->
-            </div>
-            <p class="palette-note" id="palette-note" hidden>this piece is drawn in one ink</p>
-            <div class="palette-mapping" id="palette-mapping">
-              <!-- One labeled swatch per color option, on the item itself -->
             </div>
           </div>
         </div>
@@ -1088,6 +1089,17 @@ import { load } from "ascii.rest";
   let active: Active | null = null;
   let session: StudioSession | null = null;
   let selectedLayerId = "";
+  // Per-active-item caches: a scene's frame is built once, and the composed
+  // palette, paper and ink are rebuilt only when a recolor, ground or theme
+  // changes — never inside the frame loop.
+  let cachedSceneFrame: Frame | null = null;
+  let cachedPalette: readonly string[] | null = null;
+  let cachedInk: string | null = null;
+  let cachedPaper = false;
+  function invalidateLook() {
+    cachedPalette = null;
+    cachedInk = null;
+  }
   let groundOverride: string | null = null;
   let loadToken = 0;
 
@@ -1122,7 +1134,8 @@ import { load } from "ascii.rest";
   const hexGroundLabel = document.createElement("span");
   const groundRow = document.createElement("div");
   groundRow.hidden = true;
-  const halftoneRows = document.getElementById("halftone-rows") as HTMLElement;
+  // The glyph rows moved to their own tab; they are always visible there, so
+  // the old wrapper block is gone with its hidden toggling.
   const selRamp = document.getElementById("sel-ramp") as HTMLSelectElement;
   const selDither = document.getElementById("sel-dither") as HTMLSelectElement;
   const rangeContrast = document.getElementById("range-contrast") as HTMLInputElement;
@@ -1244,7 +1257,9 @@ import { load } from "ascii.rest";
       canvas.height = Math.round(h * rows);
       canvas.style.aspectRatio = `${cols} / ${rows * cell}`;
       // The viewport takes the piece's ground, so nothing reads as a black bar.
+      // A resize invalidates the theme-color read too, so it is taken fresh.
       canvasBox.style.background = groundOverride ?? currentGround() ?? "";
+      cachedInk = null;
       atlas.width = pw * 32;
       atlas.height = ph * 32;
       xs = Int32Array.from({ length: cols + 1 }, (_, x) => Math.round(x * wpx));
@@ -1334,12 +1349,24 @@ import { load } from "ascii.rest";
       if (colorIndices.length !== needed) colorIndices = new Uint8Array(needed);
       if (lastColor.length !== needed) lastColor = new Uint8Array(needed);
 
-      const paper = ground ? !isDark(ground) : isDark(getComputedStyle(canvas).color);
+      // Paper and ink are look state, not frame state: read the theme color
+      // once, and only again after the look changes.
+      if (cachedInk === null) {
+        cachedPaper = ground ? !isDark(ground) : isDark(getComputedStyle(canvas).color);
+        cachedInk = inkFor(ground);
+      }
+      const paper = cachedPaper;
       const env: Env = { paper, color: colorIndices };
 
       let text: string;
       try {
-        text = active.kind === "piece" ? active.frame(t, env) : active.session.piece.default()(t, env);
+        if (active.kind === "piece") {
+          text = active.frame(t, env);
+        } else {
+          // Scenes build their frame helper once per item, not once per frame.
+          cachedSceneFrame ??= active.session.piece.default();
+          text = cachedSceneFrame(t, env);
+        }
       } catch (err) {
         pausePlayback();
         codeOutput.textContent = `// ${meta.name}: ${(err as Error).message}`;
@@ -1348,10 +1375,11 @@ import { load } from "ascii.rest";
 
       const overrides = active.kind === "piece" ? active.colorOverride : undefined;
       const basePalette = activePalette();
-      const palette = basePalette
-        ? basePalette.map((hex, i) => (overrides && overrides[i] ? overrides[i] : hex))
-        : null;
-      const ink = inkFor(ground);
+      // The composed palette (base + overrides) is look state too: rebuilt
+      // only after a recolor or a new item, never per frame.
+      cachedPalette ??= basePalette?.map((hex, i) => (overrides && overrides[i] ? overrides[i] : hex)) ?? null;
+      const palette = cachedPalette;
+      const ink = cachedInk;
 
       // Halftone remap: when a ramp is picked (or contrast shifted), retarget
       // each glyph's ink to the ramp by density before drawing. Ordered
@@ -1463,6 +1491,10 @@ import { load } from "ascii.rest";
   function setActive(next: Active) {
     active = next;
     groundOverride = null;
+    // New item: the scene frame, composed palette and ink are all new.
+    cachedSceneFrame = null;
+    cachedPalette = null;
+    cachedInk = null;
     const meta = activeMeta();
     pickerValue.textContent = next.kind === "piece" ? meta.name : next.name;
     selectedLayerId = next.kind === "scene" ? next.session.spec.layers[0]?.id || "" : "";
@@ -1529,7 +1561,10 @@ import { load } from "ascii.rest";
       cb.checked = layer.enabled;
       cb.addEventListener("change", (e) => {
         e.stopPropagation();
-        if (active?.kind === "scene") active.session.toggleLayer(layer.id, cb.checked);
+        if (active?.kind === "scene") {
+          cachedSceneFrame = null;
+          active.session.toggleLayer(layer.id, cb.checked);
+        }
         renderOnDemand();
         updateCodeView();
       });
@@ -1594,7 +1629,7 @@ import { load } from "ascii.rest";
 
         slider.addEventListener("input", () => {
           valSpan.textContent = slider.value;
-          if (active?.kind === "scene") active.session.setParam(activeLayer.id, key, parseFloat(slider.value));
+          if (active?.kind === "scene") (cachedSceneFrame = null), active.session.setParam(activeLayer.id, key, parseFloat(slider.value));
           renderOnDemand();
           updateCodeView();
         });
@@ -1627,7 +1662,7 @@ import { load } from "ascii.rest";
 
         picker.addEventListener("input", () => {
           hexSpan.textContent = picker.value;
-          if (active?.kind === "scene") active.session.setParam(activeLayer.id, key, picker.value);
+          if (active?.kind === "scene") (cachedSceneFrame = null), active.session.setParam(activeLayer.id, key, picker.value);
           renderOnDemand();
           updateCodeView();
         });
@@ -1664,7 +1699,7 @@ import { load } from "ascii.rest";
         });
 
         sel.addEventListener("change", () => {
-          if (active?.kind === "scene") active.session.setParam(activeLayer.id, key, sel.value);
+          if (active?.kind === "scene") (cachedSceneFrame = null), active.session.setParam(activeLayer.id, key, sel.value);
           renderOnDemand();
           updateCodeView();
         });
@@ -1719,7 +1754,7 @@ import { load } from "ascii.rest";
             val.textContent = slider.value;
             const next: [number, number] = [...current];
             next[axis] = parseFloat(slider.value);
-            if (active?.kind === "scene") active.session.setParam(activeLayer.id, key, next);
+            if (active?.kind === "scene") (cachedSceneFrame = null), active.session.setParam(activeLayer.id, key, next);
             renderOnDemand();
             updateCodeView();
           });
@@ -1748,7 +1783,7 @@ import { load } from "ascii.rest";
         cb.className = "layer-chk";
         cb.checked = !!(activeLayer.params[key] ?? paramDef.default);
         cb.addEventListener("change", () => {
-          if (active?.kind === "scene") active.session.setParam(activeLayer.id, key, cb.checked);
+          if (active?.kind === "scene") (cachedSceneFrame = null), active.session.setParam(activeLayer.id, key, cb.checked);
           renderOnDemand();
           updateCodeView();
         });
@@ -1993,9 +2028,6 @@ import { load } from "ascii.rest";
     const g = currentGround();
     if (g) colGroundInput.value = groundOverride ?? g;
 
-    // The halftone rows belong to every item now: the renderer remaps the
-    // glyphs of whatever is on screen when a ramp is picked.
-    halftoneRows.hidden = active === null;
     paletteNote.hidden = palette !== null;
     paletteSection.hidden = palette === null;
     if (!palette) return;
@@ -2094,10 +2126,13 @@ import { load } from "ascii.rest";
   }
 
   function setSwatch(index: number, hex: string) {
+    invalidateLook();
+    if (active?.kind === "scene") cachedSceneFrame = null;
     if (active?.kind === "scene") {
       const palette = [...active.session.spec.palette];
       palette[index] = hex;
       active.session.updatePalette(palette, active.session.spec.ground);
+      cachedSceneFrame = null;
       renderOnDemand();
     } else if (active?.kind === "piece") {
       active.colorOverride = { ...active.colorOverride, [index]: hex };
@@ -2467,9 +2502,12 @@ import { load } from "ascii.rest";
 
   // Palette & halftone form listeners (scene engine only)
   colGroundInput.addEventListener("input", () => {
+    invalidateLook();
+    if (active?.kind === "scene") cachedSceneFrame = null;
     if (active?.kind === "scene") {
       hexGroundLabel.textContent = colGroundInput.value;
       active.session.updatePalette(active.session.spec.palette, colGroundInput.value);
+      cachedSceneFrame = null;
       renderOnDemand();
       updateCodeView();
     } else if (active?.kind === "piece") {

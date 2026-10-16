@@ -344,8 +344,8 @@ const bug = issue("bug", current ? { title: `${current}: `, where: current } : {
         var toggle = document.getElementById("side-toggle");
         if (!frame) return;
         var key = "ascii-side-collapsed";
-        // Default to collapsed rail mode
-        var isCollapsed = localStorage.getItem(key) !== "false";
+        // Every load starts in the collapsed rail mode, whatever the last visit chose.
+        var isCollapsed = true;
         function applyState(collapsed) {
           frame.classList.toggle("side-collapsed", collapsed);
         }
@@ -354,14 +354,12 @@ const bug = issue("bug", current ? { title: `${current}: `, where: current } : {
           markBtn.addEventListener("click", function () {
             isCollapsed = false;
             applyState(isCollapsed);
-            try { localStorage.setItem(key, "false"); } catch (e) {}
           });
         }
         if (toggle) {
           toggle.addEventListener("click", function () {
             isCollapsed = true;
             applyState(isCollapsed);
-            try { localStorage.setItem(key, "true"); } catch (e) {}
           });
         }
       })();
