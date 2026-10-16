@@ -117,12 +117,15 @@ export default function goldenGate(o: Partial<GoldenGateOptions> = {}): Frame {
   const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => v / 16 - 0.47);
   const halftone = (k: number, r: number, x: number, cr: number, cg: number, cb: number, color: Uint8Array | undefined) => {
     const peak = Math.max(cr, cg, cb, 1e-4);
-    const level = clamp(Math.pow(peak, 0.9) * 1.05);
+    // a hard S-curve: values below the sky band go silent, the subjects
+    // saturate, and only the real midtones carry the dot ladder
+    const kk = clamp((Math.pow(peak, 0.55) - 0.22) / 0.5);
+    const level = clamp(kk * kk * (3 - 2 * kk) * 1.04);
     const step = Math.max(0, Math.min(3, Math.round(level * 3 + BAYER[(r & 3) * 4 + (x & 3)])));
     out[k] = DOTS[step];
     if (color) {
-      const want = step ? Math.min(1, (level + 0.05) / [0, 0.3, 0.6, 1][step]) : 0;
-      const s = ((0.32 + 0.68 * want) * (0.4 + 0.6 * smooth(0.12, 0.5, level))) / peak;
+      const want = step ? Math.min(1, (level + 0.06) / [0, 0.3, 0.6, 1][step]) : 0;
+      const s = ((0.3 + 0.7 * want) * (0.4 + 0.6 * clamp(1 - level))) / peak;
       color[k] = nearest(clamp(cr * s), clamp(cg * s), clamp(cb * s));
     }
   };
@@ -157,8 +160,10 @@ export default function goldenGate(o: Partial<GoldenGateOptions> = {}): Frame {
   // fog reflected, wet road? the bay: mirrored sky, dimmer, with slow glooms
   const bayShade = (x: number, y: number) => clamp(0.16 + 0.10 * fbm(x * 0.11, y * 0.2 + 4, 2, 0));
   const fogAt = (x: number, y: number, phase: number, low: number) => {
-    const d = fbm(x * 0.05 + phase, y * 0.09, 2, 8);
-    return clamp((d * 1.25 - 0.38) * low);
+    const d = fbm(x * 0.04 + phase, y * 0.08, 2, 8);
+    // sharpen into cloud masses instead of uniform speckle
+    const mass = clamp((d - 0.42) * 2.6);
+    return clamp(mass * low);
   };
   // reused per-frame buffers, filled at the top of each frame read per cell
   const nearArr = new Float32Array(W), fogRArr = new Float32Array(W), fogGArr = new Float32Array(W), fogBArr = new Float32Array(W), warmArr = new Float32Array(W);
@@ -202,8 +207,8 @@ export default function goldenGate(o: Partial<GoldenGateOptions> = {}): Frame {
           cr = mix(cr, fogR * (1 + 0.5 * warmSide), fA);
           cg = mix(cg, fogG * (1 + 0.45 * warmSide), fA);
           cb = mix(cb, fogB, fA);
-        } else if (y < DECK[x] + 2.2 || TOWER_HIT[x]) {
-          // steel: deck slab and the orange towers
+        } else if (y < DECK[x] + 2.2) {
+          // steel: deck slab and the orange towers, legs only above the deck
           if (TOWER_HIT[x]) {
             // tower: two legs with struts
             const legDist = Math.abs(Math.abs(x - (Math.abs(x - TOWERS[0]) <= 4.5 ? TOWERS[0] : TOWERS[1])) - 4.5);

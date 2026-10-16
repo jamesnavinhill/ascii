@@ -7,8 +7,16 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import type { Piece } from "../src/types.ts";
 
 const SRC = fileURLToPath(new URL("../src", import.meta.url));
+// Pieces kept in the repo but not listed in the indexes: drafts not yet good
+// enough to show on the live site. Remove a slug here once it earns its place.
+const HIDDEN = new Set([
+  "golden-gate", "eiffel-tower", "statue-liberty", "sydney-opera", "tokyo-night",
+  "giza", "petra", "colosseum", "great-wall", "chichen-itza", "machu-picchu",
+  "christ-redeemer", "angkor-wat", "santorini", "ha-long-bay", "stonehenge",
+  "neuschwanstein", "havasu-falls", "giants-causeway", "fuji", "iguazu",
+]);
 const slugs = readdirSync(`${SRC}/pieces`)
-  .filter((f) => f.endsWith(".ts") && f !== "index.ts")
+  .filter((f) => f.endsWith(".ts") && f !== "index.ts" && !HIDDEN.has(f.slice(0, -3)))
   .map((f) => f.slice(0, -3))
   .sort();
 const camel = (slug: string) => slug.replace(/-([a-z0-9])/g, (_, c: string) => c.toUpperCase());

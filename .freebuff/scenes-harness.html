@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>scene harness</title>
+<style>
+  body { background: #16141c; margin: 14px; font-family: Consolas, monospace; }
+  .card { margin-bottom: 22px; }
+  .card h2 { color: #a8e6c0; font-size: 14px; margin: 4px 0; font-weight: normal; }
+  canvas { image-rendering: pixelated; display: block; outline: 1px solid #333; }
+</style>
+</head>
+<body></body>
+<script src="./harness.js"></script>
+<script>
+  const CELL_W = 5, CELL_H = 9; // css px per cell
+  const COLS = 200, ROWS = 100;
+  const body = document.body;
+  const glyphs = [];
+
+  for (const [slug, piece, meta] of SCENES_BUNDLE.SCENES) {
+    const color = new Uint8Array(COLS * ROWS);
+    const text = piece(meta.options)(0, { color });
+    const lines = text.split("\n");
+
+    const card = document.createElement("div");
+    card.className = "card";
+    const h = document.createElement("h2");
+    h.textContent = slug;
+    card.appendChild(h);
+    const cvs = document.createElement("canvas");
+    cvs.width = COLS * CELL_W;
+    cvs.height = ROWS * CELL_H;
+    card.appendChild(cvs);
+    body.appendChild(card);
+
+    glyphs.push({ slug, lines, color, palette: meta.palette, cvs });
+  }
+
+  const PALETTE_CACHE = new Map();
+  function hexRGB(s) {
+    if (!PALETTE_CACHE.has(s)) {
+      PALETTE_CACHE.set(s, [parseInt(s.slice(1, 3), 16), parseInt(s.slice(3, 5), 16), parseInt(s.slice(5, 7), 16)]);
+    }
+    return PALETTE_CACHE.get(s);
+  }
+
+  const deviceScale = 2;
+  for (const g of glyphs) {
+    const ctx = g.cvs.getContext("2d");
+    g.cvs.width = COLS * CELL_W * deviceScale;
+    g.cvs.height = ROWS * CELL_H * deviceScale;
+    g.cvs.style.width = `${COLS * CELL_W}px`;
+    g.cvs.style.height = `${ROWS * CELL_H}px`;
+    ctx.font = `${11 * deviceScale}px Consolas, monospace`;
+    ctx.textBaseline = "top";
+    for (let r = 0; r < Math.min(ROWS, g.lines.length); r++) {
+      for (let c = 0; c < COLS; c++) {
+        const ch = g.lines[r][c];
+        if (!ch || ch === " ") continue;
+        const idx = g.color[r * COLS + c];
+        const hex = g.palette[idx < g.palette.length ? idx : 0];
+        ctx.fillStyle = hex;
+        ctx.fillText(ch, c * CELL_W * deviceScale, r * CELL_H * deviceScale - 1);
+      }
+    }
+  }
+
+  document.title = "harness ready";
+  window.__harnessDone = true;
+</script>
+</html>
