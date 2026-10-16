@@ -1,0 +1,45 @@
+/*
+ * Every palette entry of taj dawn, named by its role in the scene's own
+ * shading: the dawn sky's violet-to-cream, the cypress rows, the marble and
+ * the red sandstone mosque, the canal and its cypress mirror, the haze and
+ * the drifted clouds.
+ */
+export const labels: string[] = [
+  "sky · deep violet",
+  "sky · violet",
+  "sky · dusk violet",
+  "sky · pale violet",
+  "sky · palest violet",
+  "cypress · deep plum",
+  "cypress · plum",
+  "cypress · mauve",
+  "cypress · rose mauve",
+  "cypress · dusty rose",
+  "marble · warm tan",
+  "marble · sand",
+  "marble · gold sand",
+  "marble · pale gold",
+  "marble · cream",
+  "marble · white",
+  "marble · blown white",
+  "haze · violet grey",
+  "haze · pale violet",
+  "haze · mauve pale",
+  "haze · rose pale",
+  "mist · warm pale",
+  "canal · dark green",
+  "canal · deep green",
+  "canal · green",
+  "canal · light green",
+  "canal · moss",
+  "mosque · red sandstone",
+  "mosque · lit sandstone",
+  "canal shadow · dark violet",
+  "canal shadow · dusk violet",
+  "clouds · warm cream",
+  "clouds · rose cream",
+  "reflection · dark olive",
+  "reflection · moss",
+  "reflection · pale olive",
+  "reflection · warm olive",
+];

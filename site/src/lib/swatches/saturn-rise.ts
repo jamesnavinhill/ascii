@@ -1,0 +1,37 @@
+/*
+ * Every palette entry of saturn rise, named by its role in the scene's own
+ * shading: the space black, the rings' sand ladder, their greys and the ice,
+ * the planet's belt blues, the ring gaps' cyan, and the ice moon.
+ */
+export const labels: string[] = [
+  "space · black",
+  "space · near black",
+  "space · dark navy",
+  "space · deep slate",
+  "rings · dark sand",
+  "rings · brown sand",
+  "rings · mid sand",
+  "rings · golden sand",
+  "rings · light sand",
+  "rings · pale gold",
+  "rings · pale sand",
+  "rings · near white sand",
+  "rings · grey",
+  "rings · warm grey",
+  "rings · pale warm grey",
+  "rings · near white warm",
+  "rings · cold grey",
+  "planet · night navy",
+  "planet · dark navy",
+  "planet · navy",
+  "planet · dusk navy",
+  "planet · slate blue",
+  "planet · light blue",
+  "planet · pale blue",
+  "planet · palest",
+  "ring gap · cyan",
+  "ring gap · bright cyan",
+  "moon ice · white",
+  "moon ice · warm white",
+  "moon ice · cream",
+];

@@ -1,0 +1,43 @@
+/*
+ * Every palette entry of marine drive, named by its role in the scene's own
+ * shading: the bay's night water, the violet and rose town lights, the
+ * sodium necklace itself, the towers' cool windows, and the trail lights.
+ */
+export const labels: string[] = [
+  "bay · deep indigo",
+  "bay · indigo",
+  "bay · dark blue",
+  "bay · blue",
+  "bay · bright blue",
+  "bay · pale blue",
+  "town · deep violet",
+  "town · violet",
+  "town · mauve",
+  "town · dusty mauve",
+  "town · pale mauve",
+  "town · deep rose",
+  "town · rose",
+  "town · dusty rose",
+  "necklace · deep sodium",
+  "necklace · dark sodium",
+  "necklace · sodium",
+  "necklace · bright sodium",
+  "necklace · bright amber",
+  "necklace · gold",
+  "necklace · pale gold",
+  "necklace · cream",
+  "necklace · white",
+  "towers · ice white",
+  "towers · pale blue",
+  "towers · steel blue",
+  "trail · deep red",
+  "trail · red",
+  "trail · bright red",
+  "road · dark teal",
+  "road · teal",
+  "road · pale teal",
+  "hills · near black",
+  "hills · dark slate",
+  "hills · slate",
+  "hills · dusk slate",
+];
