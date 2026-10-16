@@ -2080,6 +2080,8 @@ import { load } from "ascii.rest";
     label: string;
     value(): string;
     set(hex: string): void;
+    /** The palette entry this swatch re-inks, shown on hover. */
+    index?: number;
   }
 
   function colorEntries(): MapEntry[] {
@@ -2103,6 +2105,8 @@ import { load } from "ascii.rest";
           const index = i;
           out.push({
             label: labels[i] ?? `color ${i}`,
+            // The palette index, for fine-tuning the swatch files.
+            index: index,
             value: () => (active.kind === "piece" && active.colorOverride[index]) || activePalette()![index],
             set: (hex) => {
               void setSwatch(index, hex);
@@ -2125,7 +2129,7 @@ import { load } from "ascii.rest";
       const sw = document.createElement("div");
       sw.className = "color-swatch clickable";
       sw.style.backgroundColor = entry.value();
-      sw.title = entry.value();
+      sw.title = entry.index !== undefined ? `#${entry.index} — ${entry.value()}` : entry.value();
       sw.addEventListener("click", () => {
         swatchPicker.value = rgbToHex(entry.value());
         swatchPicker.oninput = () => {
@@ -2223,7 +2227,7 @@ import { load } from "ascii.rest";
     codeOutput.textContent = `// loading source of ${meta.name}...`;
     fetchSource(item.slug)
       .then((source) => {
-        if (token === codeToken && active === item) codeOutput.textContent = source;
+        if (token === codeToken && active === item) codeOutput.textContent = withOverrides(source, item);
       })
       .catch((err) => {
         if (token !== codeToken || active !== item) return;
@@ -2235,6 +2239,46 @@ import { load } from "ascii.rest";
           `import { ${camel(item.slug)} } from "ascii.rest/pieces";\n\n` +
           `mount(document.querySelector("pre")!, ${camel(item.slug)}${opts});`;
       });
+  }
+
+  // Your recolors ride along: the source's palette is patched with any
+  // override set in the grid, so the code you copy plays in the colors the
+  // canvas shows. The registry stays untouched; this is a copy-side patch.
+  function withOverrides(source: string, item: Active & { kind: "piece" }): string {
+    const overrides = item.colorOverride;
+    if (!Object.keys(overrides).length) return source;
+    // Walk the source line by line; the palette array is the first `palette:`.
+    const lines = source.split("\n");
+    let paletteIndex = 0; // hex entries seen in the palette so far
+    let inPalette = false;
+    const hexRe = /#[0-9a-fA-F]{6}/g;
+    for (let ln = 0; ln < lines.length && (inPalette || paletteIndex === 0 && !inPalette); ) {
+      const line = lines[ln++];
+      if (!inPalette) {
+        if (!/\bpalette:\s*\[/.test(line)) continue;
+        // Palette types can also nest arrays (themed palettes are flat here, but be safe).
+        const bracket = line.indexOf("[");
+        const close = line.indexOf("]", bracket);
+        inPalette = close < 0;
+        // Whether this line holds hexes already decides the scan; fall through either way.
+        if (close >= 0 && close < bracket) continue;
+      }
+      // Patch every hex on palette lines by its running index.
+      let out = "";
+      let last = 0;
+      let m: RegExpExecArray | null;
+      hexRe.lastIndex = 0;
+      while ((m = hexRe.exec(line))) {
+        const idx = paletteIndex++;
+        out += line.slice(last, m.index) + (overrides[idx] ?? m[0]);
+        last = m.index + m[0].length;
+      }
+      if (last) out += line.slice(last);
+      lines[ln - 1] = last ? out : line;
+      if (inPalette && line.includes("]")) inPalette = false;
+      if (paletteIndex > 0 && !inPalette) break;
+    }
+    return lines.join("\n");
   }
 
   // --- piece picker --------------------------------------------------------------
