@@ -56,20 +56,6 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
         <span id="play-icon">⏸</span>
       </button>
 
-      <div class="scrubber-container">
-        <input
-          type="range"
-          id="timeline-scrubber"
-          min="0"
-          max="16"
-          step="0.05"
-          value="0"
-          aria-label="Timeline scrubber"
-        />
-      </div>
-
-      <span class="time-readout" id="time-display">0.00s</span>
-
       <div class="pill-group speed-pills">
         <button class="pill speed-pill active" type="button" data-speed="0.25">.25x</button>
         <button class="pill speed-pill" type="button" data-speed="0.5">.5x</button>
@@ -77,10 +63,8 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
         <button class="pill speed-pill" type="button" data-speed="1.5">1.5x</button>
       </div>
     </nav>
-  </div>
-
-  <div slot="tools" class="studio-header-tools">
-    <span class="stat" id="stat-perf">0.0ms</span>          <button class="pill action" type="button" id="btn-export-code">copy .ts</button>
+  </div>  <div slot="tools" class="studio-header-tools">
+    <button class="pill action" type="button" id="btn-export-code">copy .ts</button>
   </div>
 
   <div class="studio-cockpit" id="studio-cockpit">
@@ -513,13 +497,6 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
     color: var(--bg);
   }
 
-  .stat {
-    font-size: 0.75rem;
-    color: var(--muted);
-    min-width: 4rem;
-    text-align: right;
-  }
-
   /* Two-column layout: Viewport Left, Controls Right */
   .studio-main-row {
     display: grid;
@@ -595,22 +572,6 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
     -webkit-appearance: none;
     appearance: none;
     -webkit-tap-highlight-color: transparent;
-  }
-
-  .scrubber-container {
-    flex: 1 1 auto;
-    max-width: 30rem;
-    display: flex;
-    align-items: center;
-    min-width: 4rem;
-  }
-
-  .time-readout {
-    font-size: 0.75rem;
-    min-width: 3.5rem;
-    text-align: right;
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
   }
 
   /* Controls Column (Right) */
@@ -791,8 +752,7 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
   }
 
   /* Custom precision dark sliders (thin groove + solid thumb) */
-  .param-widget input[type="range"],
-  .scrubber-container input[type="range"] {
+  .param-widget input[type="range"] {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
@@ -806,8 +766,7 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
     border: none;
   }
 
-  .param-widget input[type="range"]::-webkit-slider-thumb,
-  .scrubber-container input[type="range"]::-webkit-slider-thumb {
+  .param-widget input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
     width: 12px;
@@ -820,8 +779,7 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
     margin-top: -4.5px;
   }
 
-  .param-widget input[type="range"]::-webkit-slider-runnable-track,
-  .scrubber-container input[type="range"]::-webkit-slider-runnable-track {
+  .param-widget input[type="range"]::-webkit-slider-runnable-track {
     width: 100%;
     height: 3px;
     background: #282c34;
@@ -829,8 +787,7 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
     border: none;
   }
 
-  .param-widget input[type="range"]::-moz-range-thumb,
-  .scrubber-container input[type="range"]::-moz-range-thumb {
+  .param-widget input[type="range"]::-moz-range-thumb {
     width: 12px;
     height: 12px;
     border-radius: 50%;
@@ -840,8 +797,7 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   }
 
-  .param-widget input[type="range"]::-moz-range-track,
-  .scrubber-container input[type="range"]::-moz-range-track {
+  .param-widget input[type="range"]::-moz-range-track {
     width: 100%;
     height: 3px;
     background: #282c34;
@@ -1148,9 +1104,6 @@ import { load } from "ascii.rest";
   const canvasBox = document.getElementById("canvas-box") as HTMLElement;
   const playBtn = document.getElementById("btn-play") as HTMLButtonElement;
   const playIcon = document.getElementById("play-icon") as HTMLSpanElement;
-  const scrubber = document.getElementById("timeline-scrubber") as HTMLInputElement;
-  const timeDisplay = document.getElementById("time-display") as HTMLSpanElement;
-  const perfDisplay = document.getElementById("stat-perf") as HTMLSpanElement;
   const speedPills = document.querySelectorAll(".speed-pill");
   const panelTabs = document.querySelectorAll(".panel-tab-btn");
   const panelBodies = document.querySelectorAll(".panel-body");
@@ -1301,15 +1254,13 @@ import { load } from "ascii.rest";
       slots.clear();
       full = true;
       lastText = "";
+    }    // Render on-demand (used when paused or after a resize)
+  function renderOnDemand() {
+    if (active) {
+      sizeCanvas();
+      renderFrame(currentTime);
     }
-
-    // Render on-demand (used when paused or after a resize)
-    function renderOnDemand() {
-      if (active) {
-        sizeCanvas();
-        renderFrame(currentTime);
-      }
-    }
+  }
 
     const resizeObserver = new ResizeObserver(() => {
       if (!active) return;
@@ -1372,7 +1323,6 @@ import { load } from "ascii.rest";
     // Draw one frame: the exact cell-tiled atlas copy mount() uses.
     function renderFrame(t: number) {
       if (!active) return;
-      const started = performance.now();
       const meta = activeMeta();
       const ground = currentGround();
       const cols = meta.cols;
@@ -1392,11 +1342,9 @@ import { load } from "ascii.rest";
         text = active.kind === "piece" ? active.frame(t, env) : active.session.piece.default()(t, env);
       } catch (err) {
         pausePlayback();
-        perfDisplay.textContent = "err";
         codeOutput.textContent = `// ${meta.name}: ${(err as Error).message}`;
         return;
       }
-      perfDisplay.textContent = `${(performance.now() - started).toFixed(1)}ms`;
 
       const overrides = active.kind === "piece" ? active.colorOverride : undefined;
       const basePalette = activePalette();
@@ -1489,8 +1437,6 @@ import { load } from "ascii.rest";
     const dt = (timestamp - lastTimestamp) / 1000;
     lastTimestamp = timestamp;
     currentTime = (currentTime + dt * playbackSpeed) % 16.0;
-    scrubber.value = currentTime.toFixed(2);
-    timeDisplay.textContent = `${currentTime.toFixed(2)}s`;
     renderFrame(currentTime);
     animId = requestAnimationFrame(tick);
   }
@@ -1526,8 +1472,6 @@ import { load } from "ascii.rest";
     updatePaletteUI();
     updateCodeView();
     currentTime = 0;
-    scrubber.value = "0";
-    timeDisplay.textContent = "0.00s";
     renderOnDemand();
   }
 
@@ -2497,12 +2441,6 @@ import { load } from "ascii.rest";
   playBtn.addEventListener("click", () => {
     if (isPlaying) pausePlayback();
     else startPlayback();
-  });
-
-  scrubber.addEventListener("input", () => {
-    currentTime = parseFloat(scrubber.value);
-    timeDisplay.textContent = `${currentTime.toFixed(2)}s`;
-    renderOnDemand();
   });
 
   speedPills.forEach((pill) => {
