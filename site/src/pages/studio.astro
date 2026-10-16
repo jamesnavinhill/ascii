@@ -136,9 +136,10 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
             </div>
             <div class="param-widget">
               <select id="sel-ramp">
-                <option value=" ·•●">dots [ ·•● ]</option>
-                <option value=" ⠂⠆⠖⣶">braille [ ⠂⠆⠖⣶ ]</option>
-                <option value=" .:-=+*#%@">ascii [ .:-=+*#%@ ]</option>
+                <option value="">native glyphs</option>
+                <option value=" ·•●">dots ·•●</option>
+                <option value=" ⠂⠆⠖⣶">braille ⠂⠆⠖⣶</option>
+                <option value=" .:-=+*#%@">ascii .:-=+*#%@</option>
               </select>
             </div>
           </div>
@@ -1322,6 +1323,40 @@ import { load } from "ascii.rest";
     });
     resizeObserver.observe(canvasBox);
 
+    // --- halftone remap helpers -------------------------------------------------
+    // A piece's glyphs already encode density. To redither them the studio
+    // measures each character's ink and snaps it to the chosen ramp. Darker in,
+    // lighter out: "we're not shading anything new, just re-skinning it".
+
+    const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => v / 16 - 0.5);
+    const BAYER8 = [
+      0, 32, 8, 24, 40, 8, 56, 16, 48, 12, 20, 28, 44, 4, 36, 52, 24, 60,
+      16, 56, 30, 6, 34, 62, 14, 46, 22, 54, 1, 33, 9, 25, 41, 9, 57, 17,
+      49, 13, 21, 29, 45, 5, 37, 53, 25, 61, 17, 57, 31, 7, 35, 63, 15, 47,
+      23, 55, 2, 34, 10, 26, 42, 10, 58, 18, 50, 14, 22, 30, 46, 6, 38, 54,
+    ].map((v) => v / 64 - 0.5);
+
+    // A rough per-character ink density, measured once at first use and cached.
+    const densityCache = new Map<string, number>();
+    function charDensity(c: string): number | null {
+      if (c === " ") return 0;
+      if (densityCache.has(c)) return densityCache.get(c)!;
+      const at = atlas.getContext("2d") as CanvasRenderingContext2D | null;
+      if (!at) return null;
+      at.font = `${16}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+      at.textAlign = "center";
+      at.textBaseline = "middle";
+      at.fillStyle = "#fff";
+      at.clearRect(0, 0, 16, 16);
+      at.fillText(c, 8, 8);
+      const d = at.getImageData(0, 0, 16, 16).data;
+      let sum = 0, n = 0;
+      for (let i = 3; i < d.length; i += 4) { sum += d[i]; n++; }
+      const v = sum / (n * 255);
+      densityCache.set(c, v);
+      return v;
+    }
+
     // Draw one frame: the exact cell-tiled atlas copy mount() uses.
     function renderFrame(t: number) {
       if (!active) return;
@@ -1357,6 +1392,30 @@ import { load } from "ascii.rest";
         ? basePalette.map((hex, i) => (overrides && overrides[i] ? overrides[i] : hex))
         : null;
       const ink = inkFor(ground);
+
+      // Halftone remap: when a ramp is picked (or contrast shifted), retarget
+      // each glyph's ink to the ramp by density before drawing.
+      const ramp = selRamp.value;
+      const contrast = parseFloat(rangeContrast.value);
+      if (ramp || contrast !== 1) {
+        const target = ramp || " ·•●";
+        const B = selDither.value === "bayer8" ? BAYER8 : BAYER4;
+        const bSize = selDither.value === "bayer8" ? 8 : 4;
+        const remap: string[] = [];
+        for (let i = 0; i < text.length; i++) {
+          const c = text[i];
+          if (c === "\n") { remap.push("\n"); continue; }
+          const d = charDensity(c);
+          if (d === null) { remap.push(c); continue; }
+          const x = i % cols, y = (i / cols) | 0;
+          const dither = selDither.value === "none" ? 0 : B[(y % bSize) * bSize + (x % bSize)] - 0.5;
+          let t = d * contrast + dither;
+          t = t < 0 ? 0 : t > 1 ? 1 : t;
+          const idx = Math.min(target.length - 1, Math.round(t * (target.length - 1)));
+          remap.push(target[idx]);
+        }
+        text = remap.join("");
+      }
 
       if (ground) ctx.fillStyle = ground;
       if (full) {
@@ -1973,7 +2032,9 @@ import { load } from "ascii.rest";
       hexGroundLabel.textContent = colGroundInput.value;
     }
 
-    halftoneRows.hidden = active?.kind !== "scene";
+    // The halftone rows belong to every item now: the renderer remaps the
+    // glyphs of whatever is on screen when a ramp is picked.
+    halftoneRows.hidden = active === null;
     paletteNote.hidden = palette !== null;
     paletteSection.hidden = palette === null;
     if (!palette) return;
@@ -2460,31 +2521,35 @@ import { load } from "ascii.rest";
   });
 
   selRamp.addEventListener("change", () => {
-    if (active?.kind !== "scene") return;
-    const spec = active.session.spec;
-    spec.halftone = spec.halftone || {};
-    spec.halftone.ramp = selRamp.value;
+    valContrast.textContent = rangeContrast.value;
+    if (active?.kind === "scene") {
+      const spec = active.session.spec;
+      spec.halftone = spec.halftone || {};
+      spec.halftone.ramp = selRamp.value;
+      updateCodeView();
+    }
     renderOnDemand();
-    updateCodeView();
   });
 
   selDither.addEventListener("change", () => {
-    if (active?.kind !== "scene") return;
-    const spec = active.session.spec;
-    spec.halftone = spec.halftone || {};
-    spec.halftone.dither = selDither.value as "bayer4" | "bayer8" | "none";
+    if (active?.kind === "scene") {
+      const spec = active.session.spec;
+      spec.halftone = spec.halftone || {};
+      spec.halftone.dither = selDither.value as "bayer4" | "bayer8" | "none";
+      updateCodeView();
+    }
     renderOnDemand();
-    updateCodeView();
   });
 
   rangeContrast.addEventListener("input", () => {
-    if (active?.kind !== "scene") return;
     valContrast.textContent = rangeContrast.value;
-    const spec = active.session.spec;
-    spec.halftone = spec.halftone || {};
-    spec.halftone.contrast = parseFloat(rangeContrast.value);
+    if (active?.kind === "scene") {
+      const spec = active.session.spec;
+      spec.halftone = spec.halftone || {};
+      spec.halftone.contrast = parseFloat(rangeContrast.value);
+      updateCodeView();
+    }
     renderOnDemand();
-    updateCodeView();
   });
 
   // Code copy buttons
