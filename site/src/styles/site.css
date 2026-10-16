@@ -284,10 +284,6 @@ a[aria-current="page"] {
   display: none;
 }
 
-.frame.side-collapsed .side-toggle {
-  display: none;
-}
-
 .frame.side-collapsed .side-mark-btn {
   display: flex;
 }
@@ -303,10 +299,6 @@ a[aria-current="page"] {
 }
 
 .frame:not(.side-collapsed) .logo-link {
-  display: flex;
-}
-
-.frame:not(.side-collapsed) .side-toggle {
   display: flex;
 }
 
@@ -362,29 +354,26 @@ a[aria-current="page"] {
   width: 32px;
   height: 32px;
   font-family: var(--mono);
-}
-
-/* Expanded collapse toggle (right-aligned) */
-.side-toggle {
   background: none;
-  border: 1px solid transparent;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 1.1rem;
+  border: none;
+  padding: 0;
   cursor: pointer;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: auto;
-  border-radius: 0;
 }
 
-.side-toggle:hover {
+/* The @ logo swaps to the collapse icon on hover. */
+.logo-link .mark-hover-icon {
+  display: none;
   color: var(--ink);
-  border-color: var(--well);
-  background: var(--well);
+}
+
+.logo-link:hover .mark-icon {
+  display: none;
+}
+
+.logo-link:hover .mark-hover-icon {
+  display: inline;
+  font-size: 1.25rem;
+  font-weight: 400;
 }
 
 /* Collapsed rail mode display */
@@ -1607,9 +1596,6 @@ pre.code {
   }
   .frame:not(.side-collapsed) .side-mark-btn,
   .frame:not(.side-collapsed) .side-rail-icons {
-    display: none;
-  }
-  .frame:not(.side-collapsed) .side-toggle {
     display: none;
   }
   .side-head .logo-link {

@@ -88,9 +88,10 @@ const bug = issue("bug", current ? { title: `${current}: `, where: current } : {
             <span class="mark-icon">@</span>
             <span class="mark-hover-icon" aria-hidden="true">›</span>
           </button>
-          <a class="logo-link" href="/" title="Home" aria-label="Home">@</a>
-          <button id="side-toggle" class="side-toggle" type="button" aria-label="Collapse sidebar" title="Collapse sidebar">
-            <span class="toggle-icon">‹</span>
+          <!-- The @ logo; on hover it swaps to the collapse icon in its place. -->
+          <button id="side-toggle" class="logo-link" type="button" aria-label="Collapse sidebar" title="Collapse sidebar">
+            <span class="mark-icon">@</span>
+            <span class="mark-hover-icon" aria-hidden="true">‹</span>
           </button>
         </div>
 
@@ -109,10 +110,10 @@ const bug = issue("bug", current ? { title: `${current}: `, where: current } : {
         <!-- Expanded Sidebar Content -->
         <div class="side-expanded-content">
           <p class="make">
-            <a href="/studio/" aria-current={path.startsWith("/studio/") ? "page" : undefined}>[studio]</a>
-            <a href="/banner/" aria-current={path === "/banner/" ? "page" : undefined}>[make a banner]</a>
-            <a href="/make/" aria-current={path === "/make/" ? "page" : undefined}>[image to ascii]</a>
-            <a href="/docs/" aria-current={path.startsWith("/docs/") ? "page" : undefined}>[docs]</a>
+            <a href="/studio/" aria-current={path.startsWith("/studio/") ? "page" : undefined}>studio</a>
+            <a href="/banner/" aria-current={path === "/banner/" ? "page" : undefined}>make a banner</a>
+            <a href="/make/" aria-current={path === "/make/" ? "page" : undefined}>image to ascii</a>
+            <a href="/docs/" aria-current={path.startsWith("/docs/") ? "page" : undefined}>docs</a>
           </p>
 
           {Astro.slots.has("side") ? (
@@ -327,9 +328,9 @@ const bug = issue("bug", current ? { title: `${current}: `, where: current } : {
               <span class="foot-lic">MIT licensed</span>
             </div>
             <div class="foot-right">
-              <a href="/docs/">[docs]</a>
-              <a href={REPO}>[github]</a>
-              <a href="https://github.com/bas3line/ascii" title="Original ascii.rest by @inlovewithgo — source code">[credit @inlovewithgo]</a>
+              <a href="/docs/">docs</a>
+              <a href={REPO}>github</a>
+              <a href="https://github.com/bas3line/ascii" title="Original ascii.rest by @inlovewithgo — source code">credit @inlovewithgo</a>
             </div>
           </div>
         </footer>
@@ -507,7 +508,7 @@ const bug = issue("bug", current ? { title: `${current}: `, where: current } : {
       if (motionButton) {
         const showMotion = () => {
           motionButton.hidden = !reduced.matches;
-          motionButton.firstElementChild!.textContent = motion ? "[hold still]" : "[play anyway]";
+          motionButton.firstElementChild!.textContent = motion ? "hold still" : "play anyway";
           motionButton.setAttribute(
             "aria-label",
             motion ? "Hold the pieces still, as your system asks" : "Your system asks for reduced motion, so the pieces hold still. Play them anyway",
@@ -528,7 +529,7 @@ const bug = issue("bug", current ? { title: `${current}: `, where: current } : {
       const inks = document.querySelectorAll<HTMLButtonElement>("button[data-ink]");
       const label = () =>
         inks.forEach((button) => {
-          button.firstElementChild!.textContent = mono ? "[colour]" : "[mono]";
+          button.firstElementChild!.textContent = mono ? "colour" : "mono";
           button.setAttribute("aria-label", mono ? "Show the logos in colour" : "Show the logos in one ink");
         });
       label();
@@ -580,9 +581,9 @@ const bug = issue("bug", current ? { title: `${current}: `, where: current } : {
           if (text.trim() === "" || button.getAttribute("aria-disabled") === "true") return;
           try {
             await navigator.clipboard.writeText(text);
-            label.textContent = "[copied]";
+            label.textContent = "copied";
           } catch {
-            label.textContent = "[select and copy]";
+            label.textContent = "select and copy";
             if (source) {
               source.hidden = false;
               getSelection()?.selectAllChildren(source);

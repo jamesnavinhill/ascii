@@ -111,6 +111,8 @@ export const IDEAS: Partial<Record<string, { handle: string; url: string }>> = {
   "black-prism": { handle: "satvikxs", url: "https://github.com/satvikxs" },
 };
 export const INSTALL = "git clone https://github.com/jamesnavinhill/ascii";
+/** The agent skill for the upstream library, for the agent tab on a piece page. */
+export const SKILL = "npx skills add bas3line/ascii";
 
 const optionsOf = (piece: Piece) => (piece.options && Object.keys(piece.options).length ? piece.options : null);
 
@@ -173,4 +175,9 @@ export function moduleUsage(piece: Piece) {
 /** A terminal: the package's own command plays it, nothing to install first. */
 export function terminalUsage(piece: Piece) {
   return `npx ascii.rest ${piece.slug}`;
+}
+
+/** A coding agent: the skill, then the ask in words. The skill knows the snippet for the user's framework. */
+export function agentUsage(piece: Piece) {
+  return [SKILL, ``, `# then ask your agent:`, `# add the ${piece.slug} piece to my home page`].join("\n");
 }

@@ -8,11 +8,17 @@
 import Layout from "../layouts/Layout.astro";
 import { PAGES, pageCardOf } from "../lib/pages";
 import { groups } from "../lib/library";
+import { glyphShapes } from "../lib/glyphs";
+
+// The characters' shapes, worked out at build time as /make/ does; the drawing
+// itself runs in the browser when an image is ingested.
+const glyphs = await glyphShapes();
 ---
 
 {/* Every piece the studio can load, grouped as the sidebar groups them: the
 picker reads this catalog and load[name]() fetches the module on selection. */}
 <script type="application/json" id="studio-catalog" is:inline set:html={JSON.stringify({ groups: groups.map((g) => ({ label: g.label, icon: g.icon, categories: g.categories.map((c) => ({ name: c.name, items: c.pieces.map((p) => ({ slug: p.slug, name: p.name })) })) })) })} />
+<script type="application/json" id="studio-glyphs" is:inline set:html={JSON.stringify(glyphs)} />
 
 <Layout
   title={`${PAGES.studio.title} · ascii.navinhill.com`}
@@ -21,7 +27,6 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
   card={pageCardOf("studio")}
 >
   <div slot="heading" class="studio-header-presets">
-    <span class="header-scene-label">piece</span>
     <div class="piece-picker" id="piece-picker">
       <button class="pill picker-btn" id="picker-btn" type="button" aria-haspopup="menu" aria-expanded="false">
         <span class="picker-value" id="picker-value">ocean sunset</span>
@@ -45,56 +50,55 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
               </div>
             </div>
     </div>
+
+    <nav class="transport-strip" aria-label="Playback">
+      <button class="pill transport-btn" type="button" id="btn-play" aria-label="Play or pause">
+        <span id="play-icon">⏸</span>
+      </button>
+
+      <div class="scrubber-container">
+        <input
+          type="range"
+          id="timeline-scrubber"
+          min="0"
+          max="16"
+          step="0.05"
+          value="0"
+          aria-label="Timeline scrubber"
+        />
+      </div>
+
+      <span class="time-readout" id="time-display">0.00s</span>
+
+      <div class="pill-group speed-pills">
+        <button class="pill speed-pill active" type="button" data-speed="0.25">.25x</button>
+        <button class="pill speed-pill" type="button" data-speed="0.5">.5x</button>
+        <button class="pill speed-pill" type="button" data-speed="1.0">1x</button>
+        <button class="pill speed-pill" type="button" data-speed="1.5">1.5x</button>
+      </div>
+    </nav>
   </div>
 
   <div slot="tools" class="studio-header-tools">
-    <span class="stat" id="stat-perf">0.0ms</span>
-    <button class="pill action" type="button" id="btn-export-code">[copy .ts]</button>
+    <span class="stat" id="stat-perf">0.0ms</span>          <button class="pill action" type="button" id="btn-export-code">copy .ts</button>
   </div>
 
   <div class="studio-cockpit" id="studio-cockpit">
     <!-- Main Workspace: Viewport (Left) + Control Panel (Right) -->
     <div class="studio-main-row">
-      <!-- Left: The Viewport + Transport Bar -->
+      <!-- Left: The Viewport -->
       <section class="viewport-column">
         <div class="canvas-box" id="canvas-box">
           <canvas id="studio-canvas" width="1280" height="640"></canvas>
         </div>
-
-        <nav class="transport-strip">
-          <button class="pill transport-btn" type="button" id="btn-play" aria-label="Play or pause">
-            <span id="play-icon">⏸ pause</span>
-          </button>
-
-          <div class="scrubber-container">
-            <input
-              type="range"
-              id="timeline-scrubber"
-              min="0"
-              max="16"
-              step="0.05"
-              value="0"
-              aria-label="Timeline scrubber"
-            />
-          </div>
-
-          <span class="time-readout" id="time-display">0.00s</span>
-
-          <div class="pill-group speed-pills">
-            <button class="pill speed-pill" type="button" data-speed="0.25">.25x</button>
-            <button class="pill speed-pill" type="button" data-speed="0.5">.5x</button>
-            <button class="pill speed-pill active" type="button" data-speed="1.0">1x</button>
-            <button class="pill speed-pill" type="button" data-speed="2.0">2x</button>
-          </div>
-        </nav>
       </section>
 
       <!-- Right: Control Panel beside the viewport -->
       <aside class="controls-column">
         <nav class="panel-tabs" id="panel-tabs">
-          <button class="panel-tab-btn active" type="button" data-tab="tab-layers">[layers]</button>
-          <button class="panel-tab-btn" type="button" data-tab="tab-palette">[palette]</button>
-          <button class="panel-tab-btn" type="button" data-tab="tab-image">[image]</button>
+          <button class="panel-tab-btn active" type="button" data-tab="tab-layers">layers</button>
+          <button class="panel-tab-btn" type="button" data-tab="tab-palette">palette</button>
+          <button class="panel-tab-btn" type="button" data-tab="tab-image">image</button>
         </nav>
 
         <!-- Panel Tab: Layers & Parameters -->
@@ -169,42 +173,75 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
               <!-- Swatches rendered here -->
             </div>
             <p class="palette-note" id="palette-note" hidden>this piece is drawn in one ink</p>
+            <div class="section-title">colors on this item</div>
+            <div class="palette-mapping" id="palette-mapping">
+              <!-- One labeled swatch per named color, from the item itself -->
+            </div>
           </div>
         </div>
 
-        <!-- Panel Tab: Image Ingestion -->
+        <!-- Panel Tab: Image to ascii, drawn the way /make/ draws (lib/logo.ts) -->
         <div class="panel-body" id="tab-image">
           <div class="dropzone" id="image-drop" tabindex="0" role="button">
-            <input type="file" id="image-file-input" accept="image/*" hidden />
-            <p class="drop-primary">drop photo or image</p>
-            <p class="drop-muted">PNG, JPG, WebP</p>
+            <input type="file" id="image-file-input" accept="image/*,.svg" hidden />
+            <p class="drop-primary">drop an image here</p>
+            <p class="drop-muted">svg, png, jpg, webp or gif</p>
           </div>
 
           <div class="ingest-controls">
             <div class="param-control-group">
               <div class="param-control-header">
-                <label for="ingest-motion" class="param-label">motion preset</label>
+                <label for="ingest-name" class="param-label">name</label>
               </div>
               <div class="param-widget">
-                <select id="ingest-motion">
-                  <option value="water_ripple">Lower Plane Swell</option>
-                  <option value="cloud_drift">Upper Plane Drift</option>
-                  <option value="shimmer">Micro-Shimmer</option>
-                  <option value="static">Static Halftone</option>
+                <input id="ingest-name" type="text" maxlength="32" autocomplete="off" spellcheck="false" value="my logo" />
+              </div>
+            </div>
+
+            <div class="param-control-group">
+              <div class="param-control-header">
+                <label for="ingest-width" class="param-label">width (columns)</label>
+              </div>
+              <div class="param-widget">
+                <input id="ingest-width" type="number" min="16" max="80" step="1" value="64" inputmode="numeric" />
+              </div>
+            </div>
+
+            <div class="param-control-group">
+              <div class="param-control-header">
+                <label for="ingest-style" class="param-label">style</label>
+              </div>
+              <div class="param-widget">
+                <select id="ingest-style">
+                  <option value="logo">logo — edge-matched glyphs</option>
+                  <option value="shade">shade — density like brightness</option>
                 </select>
               </div>
             </div>
 
             <div class="param-control-group">
               <div class="param-control-header">
-                <label for="ingest-split" class="param-label">horizon split</label>
-                <span class="param-val" id="val-ingest-split">50</span>
+                <label for="ingest-motion" class="param-label">motion</label>
               </div>
               <div class="param-widget">
-                <input type="range" id="ingest-split" min="10" max="90" step="1" value="50" />
+                <select id="ingest-motion">
+                  <option value="glint">glint</option>
+                  <option value="scan">scan</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="param-control-group">
+              <div class="param-control-header">
+                <label for="ingest-every" class="param-label">seconds between passes</label>
+              </div>
+              <div class="param-widget">
+                <input id="ingest-every" type="number" min="3" max="60" step="1" value="5" inputmode="numeric" />
               </div>
             </div>
           </div>
+
+          <p class="drop-muted">drawn in your browser; nothing is uploaded</p>
         </div>
       </aside>
     </div>
@@ -213,7 +250,7 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
     <section class="code-strip">
       <div class="code-head">
         <span id="code-label">standalone TypeScript piece</span>
-        <button class="pill" type="button" id="btn-copy-code-tab">[copy code]</button>
+        <button class="pill" type="button" id="btn-copy-code-tab">copy code</button>
       </div>
       <pre class="code-display"><code id="code-output">// loading code...</code></pre>
     </section>
@@ -243,15 +280,10 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
   .studio-header-presets {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    min-height: 28px;
-  }
-
-  .header-scene-label {
-    font-size: 0.75rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    gap: 0.75rem;
+    min-height: 30px;
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   /* --- piece picker -------------------------------------------------------- */
@@ -341,7 +373,7 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
     scrolls on its own. */
     .picker-cascade {
       display: flex;
-      align-items: flex-start;
+      align-items: stretch;
       max-height: var(--picker-total, 480px);
       overflow: hidden;
   }
@@ -415,22 +447,6 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
     font-variant-numeric: tabular-nums;
   }
 
-  .picker-back {
-    color: var(--muted);
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-bottom: 1px solid var(--well);
-    margin-bottom: 0.25rem;
-    border-radius: 0;
-    width: 100%;
-    padding: 0.35rem 0.6rem;
-  }
-
-  .picker-back:hover {
-    background: var(--well);
-    color: var(--ink);
-  }
 
   .picker-cat {
     display: flex;
@@ -459,21 +475,6 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
     font-size: 0.78rem;
   }
 
-  .picker-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.35rem 0.6rem;
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--muted);
-  }
-
-  .picker-title .picker-icon {
-    width: 1.1em;
-    text-align: center;
-  }
 
   .studio-header-tools {
     display: flex;
@@ -551,7 +552,7 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
     display: flex;
     flex-direction: column;
     border: 1px solid var(--well);
-    background: #000;
+    background: var(--bg);
   }
 
   .canvas-box {
@@ -563,37 +564,53 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #070b16;
+      background: var(--bg);
     }
 
     #studio-canvas {
-      width: 100%;
+      /* Contain, not fill: the art keeps its own aspect and can never be
+      letterboxed into forced black bars. The box takes the piece's ground
+      colour, so any space around it blends into the scene. */
+      width: auto;
       height: auto;
+      max-width: 100%;
+      max-height: 100%;
       display: block;
     }
 
+  /* Transport lives in the header now, between the picker and the tools. */
   .transport-strip {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.75rem;
-    padding: 0.5rem 0.75rem;
-    background: var(--bg);
-    border-top: 1px solid var(--well);
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .transport-btn {
-    min-width: 4.5rem;
+    min-width: 2.6rem;
     height: 1.8rem;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: 0.75rem;
+    /* No UA button chrome: no blue accent, no focus flash on the pause pill. */
+    background: transparent;
+    color: var(--ink);
+    border-color: var(--well);
+    accent-color: var(--ink);
+    -webkit-appearance: none;
+    appearance: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .scrubber-container {
-    flex: 1;
+    flex: 1 1 auto;
+    max-width: 30rem;
     display: flex;
     align-items: center;
+    min-width: 4rem;
   }
 
   .time-readout {
@@ -801,14 +818,14 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
   .scrubber-container input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     background: #ffffff;
     cursor: pointer;
     border: none;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
-    margin-top: -5.5px;
+    margin-top: -4.5px;
   }
 
   .param-widget input[type="range"]::-webkit-slider-runnable-track,
@@ -822,8 +839,8 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
 
   .param-widget input[type="range"]::-moz-range-thumb,
   .scrubber-container input[type="range"]::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     background: #ffffff;
     cursor: pointer;
@@ -997,6 +1014,26 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
     box-sizing: border-box;
   }
 
+  /* One labeled swatch per named color on the active item, e.g. "boat  [sw]" */
+  .palette-mapping {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    padding: 0.5rem 0;
+  }
+
+  .palette-map-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .palette-map-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
   /* Image Dropzone */
   .dropzone {
     border: 1px dashed var(--muted);
@@ -1073,12 +1110,13 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
 </style>
 
 <script>
-  import { load } from "ascii.rest";
+  import { draw, isSvg, LIMIT, raster, render, type Drawing, type Glyph, type Source, type Style } from "../lib/logo";
+import { clean, piece, source as generateSource, type Settings as LogoSettings } from "../lib/logo-file";
+import { load } from "ascii.rest";
   import type { Env, Frame, Meta, Options, Piece } from "ascii.rest";
   import type { SceneSpec, StudioSession } from "ascii.rest/studio";
   import {
       compileSceneToCode,
-      createStudioSession,
       getLayerDefinition,
       hexToRgb,
     } from "ascii.rest/studio";
@@ -1093,8 +1131,9 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
           frame: Frame;
           options: Record<string, unknown>;
           colorOverride: Record<number, string>;
-        }
-      | { kind: "scene"; session: StudioSession; name: string };
+        /** The drawn piece's standalone code, when it was made from an image instead of the library. */
+        inlineCode?: string;
+        }              | { kind: "scene"; session: StudioSession; name: string };
 
   let active: Active | null = null;
   let session: StudioSession | null = null;
@@ -1104,7 +1143,7 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
 
   // Playback state
   let isPlaying = true;
-  let playbackSpeed = 1.0;
+  let playbackSpeed = 0.25;
   let currentTime = 0;
   let lastTimestamp = performance.now();
   let animId: number | null = null;
@@ -1141,10 +1180,18 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
   const codeOutput = document.getElementById("code-output") as HTMLElement;
   const btnExportCode = document.getElementById("btn-export-code") as HTMLButtonElement;
   const btnCopyCodeTab = document.getElementById("btn-copy-code-tab") as HTMLButtonElement;
+
   const imageDrop = document.getElementById("image-drop") as HTMLElement;
   const imageFileInput = document.getElementById("image-file-input") as HTMLInputElement;
+  const ingestName = document.getElementById("ingest-name") as HTMLInputElement;
+  const ingestWidth = document.getElementById("ingest-width") as HTMLInputElement;
+  const ingestStyle = document.getElementById("ingest-style") as HTMLSelectElement;
   const ingestMotion = document.getElementById("ingest-motion") as HTMLSelectElement;
-  const ingestSplit = document.getElementById("ingest-split") as HTMLInputElement;
+  const ingestEvery = document.getElementById("ingest-every") as HTMLInputElement;
+  const paletteMappingEl = document.getElementById("palette-mapping") as HTMLElement;
+
+  // Glyph shapes for the /make/ drawing, worked out at build time.
+  const glyphs = JSON.parse(document.getElementById("studio-glyphs")!.textContent ?? "[]") as Glyph[];
 
   const pickerBtn = document.getElementById("picker-btn") as HTMLButtonElement;
   const pickerValue = document.getElementById("picker-value") as HTMLElement;
@@ -1245,6 +1292,8 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
       canvas.width = Math.round(wpx * cols);
       canvas.height = Math.round(h * rows);
       canvas.style.aspectRatio = `${cols} / ${rows * cell}`;
+      // The viewport takes the piece's ground, so nothing reads as a black bar.
+      canvasBox.style.background = groundOverride ?? currentGround() ?? "";
       atlas.width = pw * 32;
       atlas.height = ph * 32;
       xs = Int32Array.from({ length: cols + 1 }, (_, x) => Math.round(x * wpx));
@@ -1430,16 +1479,6 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
     function selectBySlug(slug: string) {
       void selectPiece(slug);
     }
-
-  // Scene-engine specs come from the image ingestion, guarded the same way
-  // so a slow file read can't overwrite a newer selection.
-  function selectSpec(spec: SceneSpec) {
-    setActive({ kind: "scene", session: createStudioSession(spec), name: getSpecTitle(spec) });
-  }
-
-  function getSpecTitle(spec: SceneSpec): string {
-    return spec.name || "image";
-  }
 
   // --- panels ---------------------------------------------------------------
   // Layer stack + parameters for scene-engine items; the piece's own options
@@ -1950,6 +1989,122 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
       swatch.dataset.index = String(i);
       paletteGridEl.appendChild(swatch);
     });
+
+    renderPaletteMap();
+  }
+
+  // --- colors on the item: one labeled swatch per named color ------------------
+  // Names come from the item itself: a scene's layers and their color params,
+  // a piece's color options, and the ground. A click opens the picker and the
+  // change lands on the same control the options tab would.
+
+  interface MapEntry {
+    label: string;
+    value(): string;
+    set(hex: string): void;
+  }
+
+  function colorEntries(): MapEntry[] {
+    if (!active) return [];
+    const out: MapEntry[] = [];
+    if (currentGround()) {
+      out.push({
+        label: "ground",
+        value: () => colGroundInput.value,
+        set: (hex) => {
+          colGroundInput.value = hex;
+          colGroundInput.dispatchEvent(new Event("input"));
+        },
+      });
+    }
+    if (active.kind === "piece") {
+      const schema = active.mod.meta.params ?? {};
+      Object.entries({ ...active.mod.meta.options, ...active.options }).forEach(([key, def]) => {
+        const pd = schema[key];
+        if (pd && pd.type === "color" && typeof def === "string") {
+          out.push({
+            label: pd.label || key,
+            value: () => String(active.options[key] ?? def),
+            set: (hex) => applyPieceColor(key, hex),
+          });
+        }
+      });
+    } else if (active.kind === "scene") {
+      active.session.spec.layers.forEach((layer) => {
+        if (!layer.enabled) return;
+        const def = getLayerDefinition(layer.type);
+        if (!def) return;
+        const colors = Object.entries(def.schema).filter(([, pd]) => pd.type === "color");
+        colors.forEach(([key, pd]) => {
+          if (!("label" in pd)) return;
+          const schemaLabel = (pd as { label?: string; default?: unknown }).label ?? key;
+          out.push({
+            label: colors.length === 1 ? layer.name : `${layer.name} ${schemaLabel}`,
+            value: () => String(layer.params[key] ?? (pd as { default?: unknown }).default ?? ""),
+            set: (hex) => {
+              if (active.kind === "scene") {
+                active.session.setParam(layer.id, key, hex);
+                renderOnDemand();
+                updateCodeView();
+                renderSelectedLayerControls();
+              }
+            },
+          });
+        });
+      });
+    }
+    return out;
+  }
+
+  function applyPieceColor(key: string, hex: string) {
+    if (active?.kind !== "piece") return;
+    active.options[key] = hex;
+    try {
+      active.frame = active.mod.default({ ...active.mod.meta.options, ...active.options });
+    } catch (err) {
+      codeOutput.textContent = `// ${active.mod.meta.name}: ${(err as Error).message}`;
+    }
+    buildOptionsControls();
+    renderOnDemand();
+    updateCodeView();
+  }
+
+  function renderPaletteMap() {
+    paletteMappingEl.innerHTML = "";
+    const entries = colorEntries();
+    if (!entries.length) {
+      const none = document.createElement("p");
+      none.className = "palette-note";
+      none.textContent = "this item has no named colors";
+      paletteMappingEl.appendChild(none);
+      return;
+    }
+    entries.forEach((entry) => {
+      const row = document.createElement("div");
+      row.className = "palette-map-row";
+
+      const labelSpan = document.createElement("span");
+      labelSpan.className = "palette-map-label";
+      labelSpan.textContent = entry.label;
+
+      const sw = document.createElement("div");
+      sw.className = "color-swatch clickable";
+      sw.style.backgroundColor = entry.value();
+      sw.title = entry.value();
+      sw.addEventListener("click", () => {
+        swatchPicker.value = rgbToHex(entry.value());
+        swatchPicker.oninput = () => {
+          entry.set(swatchPicker.value);
+          sw.style.backgroundColor = swatchPicker.value;
+          updatePaletteUI();
+        };
+        swatchPicker.click();
+      });
+
+      row.appendChild(labelSpan);
+      row.appendChild(sw);
+      paletteMappingEl.appendChild(row);
+    });
   }
 
   function setSwatch(index: number, hex: string) {
@@ -2018,6 +2173,13 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
       return;
     }
     const item = active;
+    // An ingested image shows the standalone piece /make/ would write, already in hand.
+    if (item.inlineCode) {
+      codeToken++;
+      codeLabel.textContent = `standalone TypeScript piece (${meta.cols}x${meta.rows}, ${meta.fps}fps)`;
+      codeOutput.textContent = item.inlineCode;
+      return;
+    }
     const token = ++codeToken;
     codeLabel.textContent = `${meta.name} — source (${meta.cols}x${meta.rows}, ${meta.fps}fps)`;
     codeOutput.textContent = `// loading source of ${meta.name}...`;
@@ -2183,26 +2345,17 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
 
       if (pickerView.type === "group") {
         const group = catalog.groups[pickerView.index];
-        const back = document.createElement("button");
-        back.type = "button";
-        back.className = "picker-row picker-back";
-        back.innerHTML = `<span>‹</span><span>all groups</span>`;
-        back.addEventListener("click", () => {
-          pickerView = { type: "root" };
-          renderMenu();
-        });
-        pickerBranch.appendChild(back);
-
-        const title = document.createElement("div");
-        title.className = "picker-title";
-        title.innerHTML = `<span class="picker-icon">${group.icon}</span><span>${group.label}</span>`;
-        pickerBranch.appendChild(title);
-
+        // The branch holds only the picked group's items, flush with the root rows:
+        // no back row, no echo of the label just clicked. Category headings appear
+        // only when a group has more than one.
+        const named = group.categories.length > 1;
         group.categories.forEach((category) => {
-          const head = document.createElement("div");
-          head.className = "picker-cat";
-          head.innerHTML = `<span>${category.name}</span><span class="picker-count">${category.items.length}</span>`;
-          pickerBranch.appendChild(head);
+          if (named) {
+            const head = document.createElement("div");
+            head.className = "picker-cat";
+            head.innerHTML = `<span>${category.name}</span><span class="picker-count">${category.items.length}</span>`;
+            pickerBranch.appendChild(head);
+          }
           category.items.forEach((item) => pickerBranch.appendChild(itemRow(item)));
         });
         pickerBranch.hidden = false;
@@ -2242,7 +2395,7 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
     row.className = "picker-row picker-item";
     row.setAttribute("role", "menuitem");
     row.dataset.slug = item.slug;
-    row.innerHTML = `<span class="picker-name">${item.name}</span><span class="picker-count">${item.slug}</span>`;
+    row.innerHTML = `<span class="picker-name">${item.name}</span>`;
     row.addEventListener("click", () => {
       closePanel();
             const current = active?.kind === "piece" ? active.slug : active?.kind === "scene" ? sceneSlugOf(active.name) : null;
@@ -2339,11 +2492,11 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
     const code = codeOutput.textContent ?? "";
     navigator.clipboard.writeText(code).then(() => {
       const origText = btnExportCode.textContent;
-      btnExportCode.textContent = "[copied!]";
-      btnCopyCodeTab.textContent = "[copied!]";
+      btnExportCode.textContent = "copied!";
+      btnCopyCodeTab.textContent = "copied!";
       setTimeout(() => {
         btnExportCode.textContent = origText;
-        btnCopyCodeTab.textContent = "[copy code]";
+        btnCopyCodeTab.textContent = "copy code";
       }, 1500);
     });
   }
@@ -2351,87 +2504,101 @@ picker reads this catalog and load[name]() fetches the module on selection. */}
   btnExportCode.addEventListener("click", copyCode);
   btnCopyCodeTab.addEventListener("click", copyCode);
 
-  // Image drop & ingestion: a photo becomes a one-layer scene spec
-  const COLS = 200;
-  const ROWS = 100;
+  // --- image to ascii ---------------------------------------------------------
+  // The /make/ drawing, in the studio: an svg renders as markup, a raster is
+  // edge-matched or shaded in the browser (lib/logo.ts), and what it draws
+  // plays as a piece, with the standalone code /make/ would write underneath.
+
+  let imageSrc: Source | null = null;
+  let imageFile = "";
+  let imageNamed = false;
+  let reading = 0;
+
+  const imageName = () => clean(ingestName.value) || "my logo";
+  const imageWidth = () => Math.max(16, Math.min(LIMIT.cols, Math.round(+ingestWidth.value) || 64));
+
+  function imageSettings(): LogoSettings {
+    return {
+      proper: imageName(),
+      file: imageFile,
+      category: "companies",
+      every: Math.max(3, Math.min(60, Math.round(+ingestEvery.value) || 5)),
+    };
+  }
+
+  function rebuildImage() {
+    if (!imageSrc) return;
+    const style: Style = ingestStyle.value === "shade" ? "shade" : "logo";
+    let drawing: Drawing;
+    try {
+      drawing = draw(imageSrc, imageWidth(), glyphs, style);
+    } catch (err) {
+      codeOutput.textContent = `// could not draw the image: ${(err as Error).message}`;
+      return;
+    }
+    const settings = imageSettings();
+    const mod = piece(drawing, settings);
+    setActive({
+      kind: "piece",
+      slug: `image-${mod.meta.name}`,
+      mod,
+      frame: mod.default({ ...(mod.meta.options ?? {}) }),
+      options: { ...(mod.meta.options ?? {}) },
+      colorOverride: {},
+      inlineCode: generateSource(drawing, settings, true),
+    });
+  }
+
+  async function readImage(file: File) {
+    const mine = ++reading;
+    try {
+      const svg = isSvg(file) || (!file.type && /^\s*(<\?xml[^>]*>\s*)?<svg[\s>]/i.test(await file.slice(0, 512).text()));
+      imageSrc = svg ? await render(await file.text()) : await raster(file, { keepGround: false });
+    } catch (err) {
+      codeOutput.textContent = `// could not read the image: ${(err as Error).message}`;
+      return;
+    }
+    if (mine !== reading) return;
+    if (!imageNamed) {
+      ingestName.value = clean(file.name.replace(/\.[^/.]+$/, "").replace(/[-_]+/g, " ")) || "my logo";
+    }
+    imageFile = file.name;
+    // A photo reads best shaded; anything else keeps the edge-matched logo style.
+    ingestStyle.value = imageSrc.photo ? "shade" : "logo";
+    rebuildImage();
+  }
 
   imageDrop.addEventListener("click", () => imageFileInput.click());
   imageDrop.addEventListener("dragover", (e) => e.preventDefault());
+  imageDrop.addEventListener("dragenter", (e) => e.preventDefault());
   imageDrop.addEventListener("drop", (e) => {
     e.preventDefault();
     if (e.dataTransfer?.files.length) {
-      handleImageUpload(e.dataTransfer.files[0]);
+      void readImage(e.dataTransfer.files[0]);
     }
   });
 
   imageFileInput.addEventListener("change", () => {
     if (imageFileInput.files?.length) {
-      handleImageUpload(imageFileInput.files[0]);
+      void readImage(imageFileInput.files[0]);
     }
+    imageFileInput.value = "";
   });
 
-  function handleImageUpload(file: File) {
-    const img = new Image();
-    img.src = URL.createObjectURL(file);
-    img.onload = () => {
-      const offCanvas = document.createElement("canvas");
-      offCanvas.width = COLS;
-      offCanvas.height = ROWS;
-      const offCtx = offCanvas.getContext("2d");
-      if (!offCtx) return;
-
-      offCtx.drawImage(img, 0, 0, COLS, ROWS);
-      const imgData = offCtx.getImageData(0, 0, COLS, ROWS);
-
-      const pixels = new Float32Array(COLS * ROWS * 3);
-      const colorCounts = new Map<string, number>();
-
-      for (let i = 0; i < COLS * ROWS; i++) {
-        const r = imgData.data[i * 4] / 255;
-        const g = imgData.data[i * 4 + 1] / 255;
-        const b = imgData.data[i * 4 + 2] / 255;
-        pixels[i * 3] = r;
-        pixels[i * 3 + 1] = g;
-        pixels[i * 3 + 2] = b;
-
-        const qr = Math.floor(r * 5) * 51;
-        const qg = Math.floor(g * 5) * 51;
-        const qb = Math.floor(b * 5) * 51;
-        const hex = `#${((1 << 24) + (qr << 16) + (qg << 8) + qb).toString(16).slice(1)}`;
-        colorCounts.set(hex, (colorCounts.get(hex) || 0) + 1);
-      }
-
-      const sorted = Array.from(colorCounts.entries()).sort((a, b) => b[1] - a[1]);
-      const palette = sorted.slice(0, 32).map((e) => e[0]);
-            if (palette.length < 2) palette.push("#000000", "#ffffff");
-
-            const imageSpec: SceneSpec = {
-              name: file.name.replace(/\.[^/.]+$/, "").toLowerCase(),
-              ground: palette[0] || "#000000",
-              palette: palette.length ? palette : ["#000000", "#ffffff"],
-              fps: 15,
-              imagePixels: pixels,
-              layers: [
-                {
-                  id: "img-layer-1",
-                  type: "image",
-                  name: "Photo Plane",
-                  enabled: true,
-                  params: {
-                    horizon: parseInt(ingestSplit.value),
-                    motionType: ingestMotion.value,
-                    motionSpeed: 1.0,
-                    motionIntensity: 0.08,
-                  },
-                },
-              ],
-            };
-
-            selectSpec(imageSpec);
-            // The decoded raster lives on the spec; the session threads it into the
-            // image layer when it compiles the piece.
-          };
-  }
+  let nameTimer = 0;
+  ingestName.addEventListener("input", () => {
+    imageNamed = true;
+    clearTimeout(nameTimer);
+    nameTimer = window.setTimeout(rebuildImage, 150);
+  });
+  let widthTimer = 0;
+  ingestWidth.addEventListener("input", () => {
+    clearTimeout(widthTimer);
+    widthTimer = window.setTimeout(rebuildImage, 250);
+  });
+  [ingestStyle, ingestMotion, ingestEvery].forEach((el) => {
+    el.addEventListener("change", rebuildImage);
+  });
 
   // Initialize on the library's own ocean sunset
   (async () => {
