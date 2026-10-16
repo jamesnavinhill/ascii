@@ -11,7 +11,8 @@
     "@vercel/analytics": "2.0.1",
     "@vercel/speed-insights": "2.0.0",
     "ascii.rest": "file:..",
-    "gifenc": "^1.0.3"
+    "gifenc": "^1.0.3",
+    "shiki": "4.5.0"
   },
   "devDependencies": {
     "@astrojs/vercel": "11.0.12",
