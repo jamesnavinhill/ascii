@@ -322,6 +322,12 @@ a[aria-current="page"] {
   line-height: 1;
 }
 
+.side-mark-btn .mark-icon {
+  width: 24px;
+  height: 14px;
+  display: block;
+}
+
 .side-mark-btn .mark-hover-icon {
   display: none;
   font-size: 1.15rem;
@@ -360,7 +366,13 @@ a[aria-current="page"] {
   cursor: pointer;
 }
 
-/* The @ logo swaps to the collapse icon on hover. */
+.logo-link .mark-icon {
+  width: 28px;
+  height: 16px;
+  display: block;
+}
+
+/* The n_h logo swaps to the collapse icon on hover. */
 .logo-link .mark-hover-icon {
   display: none;
   color: var(--ink);

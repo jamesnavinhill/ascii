@@ -49,8 +49,10 @@ const bug = issue("bug", current ? { title: `${current}: `, where: current } : {
     <link rel="author" href={AUTHOR.url} />
     <meta name="theme-color" content="#f5f6f7" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#131518" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <link rel="canonical" href={canonical} />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={NAME} />
@@ -85,12 +87,16 @@ const bug = issue("bug", current ? { title: `${current}: `, where: current } : {
         <!-- Top brand & collapse toggle -->
         <div class="side-head">
           <button id="side-mark-btn" class="side-mark-btn" type="button" aria-label="Expand sidebar" title="Expand sidebar">
-            <span class="mark-icon">@</span>
+            <svg class="mark-icon" viewBox="55 213 402 237" fill="currentColor" aria-hidden="true">
+              <path d="M328 215L328 395L329 395L329 397L331 397L331 398L358 398L358 397L360 396L360 294L361 294L362 292L423 292L423 293L425 294L425 396L426 396L427 398L454 398L454 397L456 397L456 396L457 396L457 294L456 294L455 292L443 292L443 291L441 290L441 281L440 281L439 279L427 279L427 278L425 277L425 268L424 268L423 266L363 266L363 265L361 265L361 263L360 263L360 214L359 214L359 213L332 213ZM87 268L87 277L86 277L85 279L73 279L73 280L71 281L71 290L70 290L69 292L57 292L57 293L55 294L55 396L56 396L56 397L58 397L58 398L85 398L85 397L87 396L87 294L88 294L89 292L150 292L150 293L152 294L152 396L153 396L154 398L181 398L181 397L183 397L183 395L184 395L184 294L183 294L182 292L170 292L170 291L168 290L168 281L167 281L166 279L154 279L154 278L152 277L152 268L151 268L150 266L91 266ZM192 425L192 449L193 449L193 450L319 450L319 449L320 449L320 425L319 425L319 424L195 424Z"/>
+            </svg>
             <span class="mark-hover-icon" aria-hidden="true">›</span>
           </button>
-          <!-- The @ logo; on hover it swaps to the collapse icon in its place. -->
+          <!-- The n_h logo; on hover it swaps to the collapse icon in its place. -->
           <button id="side-toggle" class="logo-link" type="button" aria-label="Collapse sidebar" title="Collapse sidebar">
-            <span class="mark-icon">@</span>
+            <svg class="mark-icon" viewBox="55 213 402 237" fill="currentColor" aria-hidden="true">
+              <path d="M328 215L328 395L329 395L329 397L331 397L331 398L358 398L358 397L360 396L360 294L361 294L362 292L423 292L423 293L425 294L425 396L426 396L427 398L454 398L454 397L456 397L456 396L457 396L457 294L456 294L455 292L443 292L443 291L441 290L441 281L440 281L439 279L427 279L427 278L425 277L425 268L424 268L423 266L363 266L363 265L361 265L361 263L360 263L360 214L359 214L359 213L332 213ZM87 268L87 277L86 277L85 279L73 279L73 280L71 281L71 290L70 290L69 292L57 292L57 293L55 294L55 396L56 396L56 397L58 397L58 398L85 398L85 397L87 396L87 294L88 294L89 292L150 292L150 293L152 294L152 396L153 396L154 398L181 398L181 397L183 397L183 395L184 395L184 294L183 294L182 292L170 292L170 291L168 290L168 281L167 281L166 279L154 279L154 278L152 277L152 268L151 268L150 266L91 266ZM192 425L192 449L193 449L193 450L319 450L319 449L320 449L320 425L319 425L319 424L195 424Z"/>
+            </svg>
             <span class="mark-hover-icon" aria-hidden="true">‹</span>
           </button>
         </div>
