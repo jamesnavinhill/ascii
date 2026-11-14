@@ -7,40 +7,40 @@
 
 | name | export | draws | size | fps | what you see | options |
 | --- | --- | --- | --- | --- | --- | --- |
-| `alpine-dawn` | `alpineDawn` | canvas | 200×100 | 15 | snow peaks catching first light above a still, misty mountain lake |  |
-| `amer-fort` | `amerFort` | canvas | 200×100 | 15 | amer fort floodlit gold on its hill, mirrored in maota lake at night |  |
-| `aurora-fjord` | `auroraFjord` | canvas | 200×100 | 15 | aurora curtains rippling over a still fjord, a cabin lit on the shore |  |
-| `black-prism` | `blackPrism` | canvas | 200×100 | 15 | the vercel triangle as a glass prism, splitting white light to a rainbow |  |
-| `cloud-sea` | `cloudSea` | canvas | 200×100 | 15 | the sun sinks into a drifting sea of orange cloud at dusk |  |
-| `command-city` | `commandCity` | canvas | 200×100 | 15 | a night city whose boulevards trace the command key in streetlight |  |
-| `deep-reef` | `deepReef` | canvas | 200×100 | 15 | light shafts, swaying kelp and a turning school of fish over a reef |  |
-| `desert-night` | `desertNight` | canvas | 200×100 | 15 | the milky way over a lone acacia on moonless dunes, meteors falling |  |
-| `earthrise` | `earthrise` | canvas | 200×100 | 15 | the earth rising over a cratered lunar horizon in long low sunlight |  |
-| `edge-orbit` | `edgeOrbit` | canvas | 200×100 | 15 | the night earth from orbit, cloudflare requests arcing city to city |  |
-| `gangaur-ghat` | `gangaurGhat` | canvas | 200×100 | 15 | udaipur at night, a lit gateway on lake pichola and diyas on the water |  |
-| `green-storm` | `greenStorm` | canvas | 200×100 | 15 | a thunderstorm at sea, the lightning striking in the supabase bolt |  |
-| `jal-mahal` | `jalMahal` | canvas | 200×100 | 15 | the jaipur water palace floating on a misty lake at sunrise |  |
-| `jungle-falls` | `jungleFalls` | canvas | 200×100 | 15 | a tiered waterfall in a rainforest gorge, spray, a rainbow and macaws |  |
-| `kite-festival` | `kiteFestival` | canvas | 200×100 | 15 | sankranti kites crowding a golden sky over the pink roofs of jaipur |  |
-| `kyoto-dusk` | `kyotoDusk` | canvas | 200×100 | 15 | a pagoda at dusk behind a cherry tree lit by a stone lantern |  |
-| `lake-pichola` | `lakePichola` | canvas | 200×100 | 15 | sunset on lake pichola, udaipur's palaces glowing over the water |  |
-| `lantern-lake` | `lanternLake` | canvas | 200×100 | 15 | sky lanterns rising over a still mountain lake, one let go from a boat |  |
-| `lava-wall` | `lavaWall` | canvas | 200×100 | 15 | a wall of lava lamps under the glowing orange cloud, watched by a camera |  |
-| `marine-drive` | `marineDrive` | canvas | 200×100 | 15 | mumbai's queen's necklace at night, lamps curving round the bay |  |
-| `misty-forest` | `mistyForest` | canvas | 200×100 | 15 | pine ridges fading into morning fog, sunbeams slanting through |  |
-| `night-coast` | `nightCoast` | canvas | 200×100 | 15 | a lighthouse turning its beam under moonlit clouds over a dark sea |  |
-| `night-highway` | `nightHighway` | canvas | 200×100 | 15 | a desert highway at dusk, rushing toward the mountains and last light |  |
-| `ocean-sunset` | `oceanSunset` | canvas | 200×100 | 15 | the sun sets past a pine headland, lit cloud, glitter on rolling sea |  |
-| `planet-scale` | `planetScale` | canvas | 200×100 | 15 | a dark planet cut into the planetscale mark, backlit, a moon circling |  |
-| `prism-city` | `prismCity` | canvas | 200×100 | 15 | a black spire and an orange cloud over a blue hour city and its river |  |
-| `salt-flat` | `saltFlat` | canvas | 200×100 | 15 | the vercel triangle over a mirror of salt, the sun rising behind its tip |  |
-| `saturn-rise` | `saturnRise` | canvas | 200×100 | 15 | saturn and its rings hanging over the cracked ice and geysers of a moon |  |
-| `snow-train` | `snowTrain` | canvas | 200×100 | 15 | a lit train crossing a snowy stone viaduct at night as snow falls |  |
-| `storm-plains` | `stormPlains` | canvas | 200×100 | 15 | an anvil thunderhead at dusk flickering over a wheat field |  |
-| `taj-dawn` | `tajDawn` | canvas | 200×100 | 15 | the taj mahal at sunrise, mirrored in its pool through morning haze |  |
-| `tokyo-rain` | `tokyoRain` | canvas | 200×100 | 15 | a tokyo side street in the rain, neon signs shining on the wet road |  |
-| `varanasi-ghats` | `varanasiGhats` | canvas | 200×100 | 15 | dusk aarti on the ganga, lamps on the steps and diyas on the water |  |
-| `volcano-night` | `volcanoNight` | canvas | 200×100 | 15 | a volcano erupting at night, lava rivers, an ash plume full of lightning |  |
+| `alpine-dawn` | `alpineDawn` | canvas | 200×100 | 15 | snow peaks catching first light above a still, misty mountain lake | `{"horizon":56.5,"cameraHeight":1.5,"shoreDistance":46,"shore":62,"sunX":151,"sunY":50,"sunRadius":4.5,"mistSpeed":1.1,"cloudSpeed":0.8}` |
+| `amer-fort` | `amerFort` | canvas | 200×100 | 15 | amer fort floodlit gold on its hill, mirrored in maota lake at night | `{"water":62,"moonX":172,"moonY":13,"fortGlow":1,"glowSpread":6,"flockSpeed":1}` |
+| `aurora-fjord` | `auroraFjord` | canvas | 200×100 | 15 | aurora curtains rippling over a still fjord, a cabin lit on the shore | `{"waterline":62,"auroraHeight":40,"auroraBase":5,"auroraSway":0.55,"curtainBBase":14,"starDensity":0.986}` |
+| `black-prism` | `blackPrism` | canvas | 200×100 | 15 | the vercel triangle as a glass prism, splitting white light to a rainbow | `{"top":12,"scale":1.36,"enter":0.46,"leave":0.5,"dust":700,"pulse":0.16}` |
+| `cloud-sea` | `cloudSea` | canvas | 200×100 | 15 | the sun sinks into a drifting sea of orange cloud at dusk | `{"horizon":40,"sunX":150,"sunHeight":1.5,"sunRadius":10,"billowWidth":1.7,"drift":0.12,"breath":0.12}` |
+| `command-city` | `commandCity` | canvas | 200×100 | 15 | a night city whose boulevards trace the command key in streetlight | `{"horizon":-260,"groundRow":50,"tilt":1.5,"gridScale":1.9,"buildingHeight":9,"mistDrift":1,"trafficSpeed":1}` |
+| `deep-reef` | `deepReef` | canvas | 200×100 | 15 | light shafts, swaying kelp and a turning school of fish over a reef | `{"surface":15,"horizon":61,"sunX":136,"sunY":-12,"fanSize":27,"fish":150}` |
+| `desert-night` | `desertNight` | canvas | 200×100 | 15 | the milky way over a lone acacia on moonless dunes, meteors falling | `{"horizon":64,"scale":0.62,"cameraHeight":6,"duneHeight":16,"townX":30,"townDepth":66,"acacia":150,"arcScale":1}` |
+| `earthrise` | `earthrise` | canvas | 200×100 | 15 | the earth rising over a cratered lunar horizon in long low sunlight | `{"eye":37,"focal":112,"cameraHeight":20,"moonRadius":1500,"earthRow":32,"earthRadius":22,"spin":0.045,"rise":5,"riseTime":150}` |
+| `edge-orbit` | `edgeOrbit` | canvas | 200×100 | 15 | the night earth from orbit, cloudflare requests arcing city to city | `{"sunAngle":63,"sunPulse":0.08,"sunGlow":1,"rotation":1440,"requests":14,"cityLights":1}` |
+| `gangaur-ghat` | `gangaurGhat` | canvas | 200×100 | 15 | udaipur at night, a lit gateway on lake pichola and diyas on the water | `{"waterline":64,"farShore":58,"cityEnd":142,"moonX":170,"moonY":13,"gatewayX":75,"diyas":52}` |
+| `green-storm` | `greenStorm` | canvas | 200×100 | 15 | a thunderstorm at sea, the lightning striking in the supabase bolt | `{"horizon":76,"boltTop":28,"stormPeriod":10.8,"cloudDrift":1.1,"rainSpeed":55,"rainShear":25}` |
+| `jal-mahal` | `jalMahal` | canvas | 200×100 | 15 | the jaipur water palace floating on a misty lake at sunrise | `{"waterline":62,"sunX":148,"sunY":30,"sunRadius":7.5,"mistSpeed":1.6,"boatX":158}` |
+| `jungle-falls` | `jungleFalls` | canvas | 200×100 | 15 | a tiered waterfall in a rainforest gorge, spray, a rainbow and macaws | `{"pool":80,"ledge":50,"waterfallX":101,"rainbowX":118,"rainbowY":116,"rainbowRadius":56,"sunX":30,"sunY":-40,"macawPeriod":16}` |
+| `kite-festival` | `kiteFestival` | canvas | 200×100 | 15 | sankranti kites crowding a golden sky over the pink roofs of jaipur | `{"horizon":62,"sunX":56,"sunY":50,"sunRadius":6.5,"sunGlow":1,"kiteCount":66,"kiteSize":1}` |
+| `kyoto-dusk` | `kyotoDusk` | canvas | 200×100 | 15 | a pagoda at dusk behind a cherry tree lit by a stone lantern | `{"shore":80,"pagodaX":141,"moonX":176,"moonY":17,"lanternX":53,"lanternBase":98,"lanternScale":1.8,"petals":50,"cloudSpeed":0.8}` |
+| `lake-pichola` | `lakePichola` | canvas | 200×100 | 15 | sunset on lake pichola, udaipur's palaces glowing over the water | `{"horizon":62,"sunX":58,"sunY":48,"lakePalaceY":72,"plinth":54,"cloudDrift":0.6}` |
+| `lantern-lake` | `lanternLake` | canvas | 200×100 | 15 | sky lanterns rising over a still mountain lake, one let go from a boat | `{"waterline":64,"festivalX":100,"boatX":108.5,"boatWaterline":90,"boatScale":1.4,"cycle":20,"lanterns":240}` |
+| `lava-wall` | `lavaWall` | canvas | 200×100 | 15 | a wall of lava lamps under the glowing orange cloud, watched by a camera | `{"signWidth":62,"lampSize":1,"glowStrength":1,"blobSize":1,"waxSpeed":1}` |
+| `marine-drive` | `marineDrive` | canvas | 200×100 | 15 | mumbai's queen's necklace at night, lamps curving round the bay | `{"horizon":40,"tip":176,"moonX":189,"moonY":13,"moonRadius":4.5,"cars":26,"cloudDrift":1.3}` |
+| `misty-forest` | `mistyForest` | canvas | 200×100 | 15 | pine ridges fading into morning fog, sunbeams slanting through | `{"sunX":146,"sunY":45.5,"sunRadius":3.4,"cloudSpeed":0.6,"beamDrift":1.6,"beamSway":0.35,"beamPulse":0.7,"motes":110}` |
+| `night-coast` | `nightCoast` | canvas | 200×100 | 15 | a lighthouse turning its beam under moonlit clouds over a dark sea | `{"horizon":60,"moonX":150,"moonY":19,"moonRadius":6,"lampX":30,"beamTurn":8,"cloudDrift":1.4,"waveSpeed":0.12}` |
+| `night-highway` | `nightHighway` | canvas | 200×100 | 15 | a desert highway at dusk, rushing toward the mountains and last light | `{"horizon":50,"vanishX":100,"focal":110,"speed":16,"moonX":158,"moonY":14,"moonRadius":4.6,"poleHeight":6.3}` |
+| `ocean-sunset` | `oceanSunset` | canvas | 200×100 | 15 | the sun sets past a pine headland, lit cloud, glitter on rolling sea | `{"horizon":56,"sunX":134,"sunHeight":4.5,"sunRadius":8.5,"waveSpeed":1,"cloudSpeed":1,"boat":112}` |
+| `planet-scale` | `planetScale` | canvas | 200×100 | 15 | a dark planet cut into the planetscale mark, backlit, a moon circling | `{"centreX":100,"centreY":50,"radius":41,"backX":18,"backY":18,"moonRadius":7,"orbit":16,"orbitWidth":66,"orbitHeight":11}` |
+| `prism-city` | `prismCity` | canvas | 200×100 | 15 | a black spire and an orange cloud over a blue hour city and its river | `{"bank":64,"water":70,"cloudHeight":42,"towerX":100.5,"shaftWidth":7,"spireWidth":10,"shoulder":37}` |
+| `salt-flat` | `saltFlat` | canvas | 200×100 | 15 | the vercel triangle over a mirror of salt, the sun rising behind its tip | `{"centre":100,"halfBase":22,"horizon":57,"lift":1.7,"sunHeight":3.2,"plate":2,"loop":24,"ripple":1}` |
+| `saturn-rise` | `saturnRise` | canvas | 200×100 | 15 | saturn and its rings hanging over the cracked ice and geysers of a moon | `{"horizon":70,"saturnX":84,"saturnY":33,"saturnRadius":25,"incline":0.34,"roll":0.14,"moonOrbit":2.85,"moonPeriod":140,"sunX":173,"sunY":55}` |
+| `snow-train` | `snowTrain` | canvas | 200×100 | 15 | a lit train crossing a snowy stone viaduct at night as snow falls | `{"moonX":152,"moonY":15,"moonRadius":7,"speed":7,"roof":42,"tunnelMouth":185,"trainLength":156,"lampHeight":47}` |
+| `storm-plains` | `stormPlains` | canvas | 200×100 | 15 | an anvil thunderhead at dusk flickering over a wheat field | `{"horizon":64,"base":45,"sunX":30,"sunDepth":6,"drift":1.2,"shaft":0.9,"gust":9}` |
+| `taj-dawn` | `tajDawn` | canvas | 200×100 | 15 | the taj mahal at sunrise, mirrored in its pool through morning haze | `{"sunX":36,"sunY":40,"horizon":60,"base":68,"tajX":128,"reflect":1.55,"scale":0.7}` |
+| `tokyo-rain` | `tokyoRain` | canvas | 200×100 | 15 | a tokyo side street in the rain, neon signs shining on the wet road | `{"horizon":50,"focus":46,"fog":17,"rainSpeed":1,"rainCount":1,"cloudDrift":1,"glow":1}` |
+| `varanasi-ghats` | `varanasiGhats` | canvas | 200×100 | 15 | dusk aarti on the ganga, lamps on the steps and diyas on the water | `{"waterline":60,"ghats":150,"glowX":156,"diyas":34,"boatSpeed":0.1}` |
+| `volcano-night` | `volcanoNight` | canvas | 200×100 | 15 | a volcano erupting at night, lava rivers, an ash plume full of lightning | `{"craterX":100,"rim":40,"base":86,"span":32,"plain":76,"shore":81,"ashRise":3.2}` |
 
 ## ui (15)
 

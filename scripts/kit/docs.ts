@@ -26,11 +26,13 @@ if (!existsSync(join(root, "dist/kit/index.js"))) {
 
 // The pages, and the README's blocks that use the kit.
 const docs = join(root, "site/src/pages/docs");
+// Worktrees checked out with autocrlf hold CRLF; the fence and tidy matchers are LF, so normalize at read.
+const readPlain = (p: string) => readFileSync(p, "utf8").replace(/\r\n/g, "\n");
 const sources = readdirSync(docs)
   .filter((f) => /^kit(-[a-z0-9]+)?\.md$/.test(f))
   .sort()
-  .map((f) => ({ name: f.slice(0, -3), text: readFileSync(join(docs, f), "utf8") }));
-sources.push({ name: "readme", text: readFileSync(join(root, "README.md"), "utf8") });
+  .map((f) => ({ name: f.slice(0, -3), text: readPlain(join(docs, f)) }));
+sources.push({ name: "readme", text: readPlain(join(root, "README.md")) });
 
 const dir = mkdtempSync(join(tmpdir(), "ascii-kit-docs-"));
 mkdirSync(join(dir, "node_modules/@types"), { recursive: true });
@@ -107,8 +109,9 @@ if (tsc.status !== 0) {
 const runner = join(dir, "run.mjs");
 writeFileSync(
   runner,
-  `import { snapshot } from "ascii.rest/kit";
-const mod = await import(process.argv[2]);
+  `import { pathToFileURL } from "node:url";
+import { snapshot } from "ascii.rest/kit";
+const mod = await import(pathToFileURL(process.argv[2]).href);
 const p = mod.default;
 if (!p || typeof p !== "object" || !p.meta) { console.log("ran, no piece"); process.exit(0); }
 const { meta } = p;

@@ -6,6 +6,7 @@
 
 /** A docs page's source split into its frontmatter description and its Markdown body. */
 export function split(source: string): { description: string; body: string } {
+  source = source.replace(/\r\n/g, "\n"); // working trees checked out with autocrlf must read like the LF index
   const front = /^---\n([\s\S]*?)\n---\n/.exec(source);
   const description = front ? (/^description:\s*(.*)$/m.exec(front[1])?.[1] ?? "") : "";
   return { description, body: front ? source.slice(front[0].length) : source };
@@ -35,7 +36,8 @@ export function plain(markdown: string, site: string): string {
 }
 
 /** A section of a page's plain body, from its heading to the next of the same level, without the heading. */
-export function section(body: string, heading: string): string {
+export function section(input: string, heading: string): string {
+  const body = input.replace(/\r\n/g, "\n"); // heading anchors are LF; a CRLF working tree must match too
   const at = body.indexOf(`\n## ${heading}\n`);
   if (at < 0) return "";
   const rest = body.slice(at + heading.length + 5);
